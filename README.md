@@ -142,7 +142,7 @@
 | 项目 | 仓库 | 形态 | 主要用户 |
 |---|---|---|---|
 | **chayuan-desktop**(本仓库) | (内部) | **桌面单机应用** —— Tauri 2 外壳 + 嵌入式 Python 后端 | 不愿暴露密钥/文档到外网的个人、政企单机用户 |
-| **chayuan-wps** | <https://github.com/zhgyuhuii/chayuan.git> | **WPS 文字加载项** —— Vue 3 加载项,运行在 WPS 内部 | 重度使用 WPS 编辑公文 / 合同 / 标书的政企作者 |
+| **chayuan-wps** | < https://github.com/zhgyuhuii/chayuan-wps-releases> | **WPS 文字加载项** —— Vue 3 加载项,运行在 WPS 内部 | 重度使用 WPS 编辑公文 / 合同 / 标书的政企作者 |
 
 ### 二者如何协作
 
@@ -182,7 +182,7 @@
 - 桌面单机版默认 **关闭鉴权**(单机用户没有用户的概念),WPS 加载项侧已加 `authMode: 'none'`
   分支,可以无密钥直连本机后端。
 
-详见 chayuan-wps 仓库的 [README](https://github.com/zhgyuhuii/chayuan/blob/main/README.md) 与 RELEASE_NOTES_v3.0。
+详见 chayuan-wps 仓库的 [README](https://github.com/zhgyuhuii/chayuan-wps-releases/blob/main/README.md) 与 RELEASE_NOTES_v3.0。
 
 ---
 
@@ -929,7 +929,7 @@ X-Timestamp:  <unix_ms>
 X-Sign:       <HMAC-SHA256(secret, "{app_id}\n{timestamp}\n{path}\n{body_md5}")>
 ```
 
-详见 [`chayuan-wps/src/services/kb/authClient.js`](https://github.com/zhgyuhuii/chayuan/blob/main/src/services/kb/authClient.js) 的实现。
+详见 [`chayuan-wps/src/services/kb/authClient.js`](https://github.com/zhgyuhuii/chayuan-wps-release/blob/main/src/services/kb/authClient.js) 的实现。
 
 ---
 
@@ -1157,7 +1157,7 @@ pnpm typecheck
 | **应用内 反馈** | 设置 → 反馈 → 内嵌支付/关注二维码 + GitHub Issue 链接 |
 | **官网** | <https://aidooo.com> |
 | **微信公众号** | 智灵鸟科技 |
-| **WPS 加载项教程** | <https://github.com/zhgyuhuii/chayuan/blob/main/README.md> |
+| **WPS 加载项教程** | <https://github.com/zhgyuhuii/chayuan-wps-releases/blob/main/README.md> |
 | **打包技术文档** | [PACKAGING.md](PACKAGING.md) |
 | **CLAUDE.md** | 给 AI 助手 / 二开开发者看的总架构与任务清单 |
 
@@ -1230,7 +1230,7 @@ pnpm typecheck
 | 官网 | 产品介绍 / 商务联系 | <https://aidooo.com> |
 | 微信公众号 | 版本动态 / 技术深读 | 智灵鸟科技 |
 | GitHub Issue | 公开技术问题(本仓库) | (内部) |
-| GitHub Issue (WPS) | WPS 加载项问题 | <https://github.com/zhgyuhuii/chayuan/issues> |
+| GitHub Issue (WPS) | WPS 加载项问题 | <https://github.com/zhgyuhuii/chayuan-wps-releases/issues> |
 | 商务邮件 | 企业授权 / OEM / 定制 | 详见官网 |
 
 **贡献指南(简要)**:
