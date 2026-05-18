@@ -142,7 +142,7 @@
 | 项目 | 仓库 | 形态 | 主要用户 |
 |---|---|---|---|
 | **chayuan-desktop**(本仓库) | (内部) | **桌面单机应用** —— Tauri 2 外壳 + 嵌入式 Python 后端 | 不愿暴露密钥/文档到外网的个人、政企单机用户 |
-| **chayuan-wps** | < https://github.com/zhgyuhuii/chayuan-wps-releases> | **WPS 文字加载项** —— Vue 3 加载项,运行在 WPS 内部 | 重度使用 WPS 编辑公文 / 合同 / 标书的政企作者 |
+| **chayuan-wps** | <https://github.com/zhgyuhuii/chayuan-wps-releases> | **WPS 文字加载项** —— Vue 3 加载项,运行在 WPS 内部 | 重度使用 WPS 编辑公文 / 合同 / 标书的政企作者 |
 
 ### 二者如何协作
 
@@ -929,7 +929,7 @@ X-Timestamp:  <unix_ms>
 X-Sign:       <HMAC-SHA256(secret, "{app_id}\n{timestamp}\n{path}\n{body_md5}")>
 ```
 
-详见 [`chayuan-wps/src/services/kb/authClient.js`](https://github.com/zhgyuhuii/chayuan-wps-release/blob/main/src/services/kb/authClient.js) 的实现。
+详见 [`chayuan-wps/src/services/kb/authClient.js`](https://github.com/zhgyuhuii/chayuan-wps-releases/blob/main/src/services/kb/authClient.js) 的实现。
 
 ---
 
