@@ -1,0 +1,30 @@
+{"id":"q01","query":"什么是知识库的混合检索?","expected_doc_ids":["hybrid-search-overview","retrieval-pipeline"],"capability":"chat","note":"概念性提问,期待命中混合检索综述类文档"}
+{"id":"q02","query":"hybrid_search 怎么调用?","expected_doc_ids":["api-hybrid-search","kb-routes"],"capability":"chat","note":"API 调用说明类问题"}
+{"id":"q03","query":"BGE Reranker 跑在 CPU 上慢怎么办?","expected_doc_ids":["rerank-troubleshooting","bge-deployment"],"capability":"chat","note":"性能/排错类"}
+{"id":"q04","query":"图像嵌入用哪个模型最准?","expected_doc_ids":["image-embedder-recommendation","siglip2-overview"],"capability":"chat","note":"模型选型类"}
+{"id":"q05","query":"OnlyOffice 启动失败 jwt secret 不一致","expected_doc_ids":["onlyoffice-troubleshooting","onlyoffice-deploy"],"capability":"chat","note":"具体错误排查"}
+{"id":"q06","query":"hf-mirror 下载慢能切换镜像源吗?","expected_doc_ids":["mirror-source","faq-network"],"capability":"chat","note":"配置类"}
+{"id":"q07","query":"如何让 Ollama 跑下载好的 GGUF 模型?","expected_doc_ids":["ollama-modelfile","ollama-quickstart"],"capability":"chat","note":"运维类"}
+{"id":"q08","query":"什么是 RRF 融合?","expected_doc_ids":["rrf-explained","retrieval-pipeline"],"capability":"chat","note":"概念性"}
+{"id":"q09","query":"知识库 chunk size 推荐多少?","expected_doc_ids":["chunk-size-tuning","ingestion-best-practices"],"capability":"chat","note":"调参类"}
+{"id":"q10","query":"图片上传后没法搜索是什么原因?","expected_doc_ids":["image-search-troubleshooting","image-embedder-missing"],"capability":"chat","note":"故障类"}
+{"id":"q11","query":"vLLM 启动需要哪些环境变量?","expected_doc_ids":["vllm-deploy","gateway-config"],"capability":"chat","note":"部署类"}
+{"id":"q12","query":"知识库支持哪些文件格式?","expected_doc_ids":["supported-formats","ingestion-overview"],"capability":"chat","note":"FAQ"}
+{"id":"q13","query":"如何离线安装基础模型?","expected_doc_ids":["offline-install","packaging-overview"],"capability":"chat","note":"部署类"}
+{"id":"q14","query":"端口被占用会自动换吗?","expected_doc_ids":["port-allocator","runtime-info"],"capability":"chat","note":"运维细节"}
+{"id":"q15","query":"如何修改默认对话模型?","expected_doc_ids":["default-models","capability-defaults"],"capability":"chat","note":"配置类"}
+{"id":"q16","query":"集群部署支持几种数据库?","expected_doc_ids":["cluster-deploy","db-options"],"capability":"chat","note":"架构选型"}
+{"id":"q17","query":"OCR 推荐用 RapidOCR 还是 PaddleOCR?","expected_doc_ids":["ocr-comparison","ocr-deploy"],"capability":"chat","note":"模型选型"}
+{"id":"q18","query":"重排模型不稳定怎么办?","expected_doc_ids":["rerank-troubleshooting","retrieval-pipeline"],"capability":"chat","note":"排错"}
+{"id":"q19","query":"为什么搜索结果排序不一样?","expected_doc_ids":["rerank-and-fusion","retrieval-pipeline"],"capability":"chat","note":"行为解释"}
+{"id":"q20","query":"如何接入企业 LDAP?","expected_doc_ids":["enterprise-ldap","auth-overview"],"capability":"chat","note":"企业部署"}
+{"id":"q21","query":"chayuan-pack 能离线打包模型权重吗?","expected_doc_ids":["packaging-overview","layout-yaml"],"capability":"chat","note":"打包"}
+{"id":"q22","query":"模型下载完后 Ollama 看不到为什么?","expected_doc_ids":["framework-wiring","ollama-modelfile"],"capability":"chat","note":"运行时联动"}
+{"id":"q23","query":"语音转文字推荐哪个模型?","expected_doc_ids":["asr-comparison","whisper-deploy"],"capability":"chat","note":"模型选型"}
+{"id":"q24","query":"图像向量模型自动安装是怎么触发的?","expected_doc_ids":["image-embedder-auto-install","lifecycle-overview"],"capability":"chat","note":"行为解释"}
+{"id":"q25","query":"ComfyUI 工作流去哪改?","expected_doc_ids":["comfyui-workflow","t2i-overview"],"capability":"chat","note":"自定义流程"}
+{"id":"q26","query":"chayuan-server 启动失败怎么排查?","expected_doc_ids":["startup-troubleshooting","preflight"],"capability":"chat","note":"通用排错"}
+{"id":"q27","query":"哪里看到默认凭据?","expected_doc_ids":["runtime-info","credentials"],"capability":"chat","note":"运维"}
+{"id":"q28","query":"BM25 在中文上准吗?","expected_doc_ids":["bm25-zh","jieba-tokenizer"],"capability":"chat","note":"算法解释"}
+{"id":"q29","query":"如何切换图像嵌入模型?","expected_doc_ids":["image-embedder-config","capability-defaults"],"capability":"chat","note":"配置"}
+{"id":"q30","query":"知识库准召率能到多少?","expected_doc_ids":["benchmarks-overview","kb-recall-baseline"],"capability":"chat","note":"自指元问题"}

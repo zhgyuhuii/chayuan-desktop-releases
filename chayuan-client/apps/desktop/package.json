@@ -1,0 +1,38 @@
+{
+  "name": "@chayuan/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "dev:vite": "vite",
+    "dev:thin": "VITE_THIN_CLIENT=1 tauri dev --config src-tauri/tauri.thin.conf.json",
+    "build:vite": "vite build",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && tauri build",
+    "build:full": "tsc -p tsconfig.json --noEmit && vite build && tauri build --bundles msi",
+    "build:integrated": "pnpm run build:full",
+    "build:fast": "tsc -p tsconfig.json --noEmit && vite build && tauri build --no-bundle --profile release-fast",
+    "build:thin": "tsc -p tsconfig.json --noEmit && VITE_THIN_CLIENT=1 vite build && VITE_THIN_CLIENT=1 tauri build --config src-tauri/tauri.thin.conf.json",
+    "tauri": "tauri",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@chayuan/app": "workspace:*",
+    "@chayuan/platform-shared": "workspace:*",
+    "@chayuan/platform-tauri": "workspace:*",
+    "@chayuan/ui": "workspace:*",
+    "@tauri-apps/api": "^2.11.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0-beta.6",
+    "@tauri-apps/cli": "^2.1.0",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0-beta.6",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

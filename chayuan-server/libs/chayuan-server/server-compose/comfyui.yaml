@@ -1,0 +1,38 @@
+# ComfyUI — Stable Diffusion 工作流(强烈建议 NVIDIA GPU)
+# ---------------------------------------------------------------------------
+# ⚠ CPU 模式几乎不能用 — 单张 SD 图片 CPU 推理需 5-10 分钟
+# 启动:  docker compose -f comfyui.yaml up -d --wait
+# ---------------------------------------------------------------------------
+
+services:
+  comfyui:
+    image: ghcr.io/comfyanonymous/comfyui:latest
+    container_name: chayuan-comfyui
+    restart: unless-stopped
+    ports:
+      - "18188:8188"
+    volumes:
+      - comfyui-models:/app/models
+      - comfyui-output:/app/output
+      - comfyui-custom-nodes:/app/custom_nodes
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8188/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+
+volumes:
+  comfyui-models:
+  comfyui-output:
+  comfyui-custom-nodes:

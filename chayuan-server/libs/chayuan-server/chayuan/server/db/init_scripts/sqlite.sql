@@ -1,0 +1,11 @@
+-- SQLite 无需 "CREATE DATABASE"：第一次执行 `sqlite3.connect(path)` 或
+-- `sqlalchemy.create_engine('sqlite:///<path>')` 打开文件时会自动创建空库文件。
+--
+-- 为了让「库不存在 → 立即创建」这条交互链在三种方言下体验一致，Python 侧在
+-- 遇到 sqlite 的缺库情况时会：
+--   1. 创建父目录（os.makedirs(exist_ok=True)）；
+--   2. touch 一个空 sqlite 文件（用 sqlite3.connect + close）；
+--   3. 再次验证连接。
+--
+-- 本文件仅作为「存在专属建库脚本占位」的文档化约定；实际 SQL 不会被执行。
+SELECT 1;

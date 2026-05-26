@@ -1,0 +1,32 @@
+apiVersion: v2
+name: chayuan
+description: |
+  察元一体化多模态 AI 平台 Helm chart。
+
+  默认部署:
+    - chayuan-gateway × 3 (HPA, OpenAI 兼容 API + 跨模型路由)
+    - chayuan-server × 2 (NiceGUI 配置面板 + 业务 API)
+    - 外接 Postgres / Redis / Milvus / MinIO / OnlyOffice (走 values 配置;不内置)
+    - 推理后端 (Ollama / vLLM / Infinity) 视 values.yaml 决定是否纳管
+
+  适合企业 / 多租户场景;个人用户用单机包即可,不必上 k8s。
+type: application
+version: 0.1.0
+appVersion: "6.0.0"
+
+keywords:
+  - chayuan
+  - llm
+  - rag
+  - openai-compatible
+  - multimodal
+
+home: https://github.com/chayuan/chayuan-server
+sources:
+  - https://github.com/chayuan/chayuan-server
+maintainers:
+  - name: chayuan
+    email: noreply@chayuan.dev
+
+# helm 默认行为 (允许插件扩展)
+icon: https://chayuan.dev/icon.png

@@ -1,0 +1,127 @@
+# chayuan helm values · 默认参考企业级生产部署
+#
+# 设计原则:
+#   * 所有依赖服务(postgres/redis/milvus/minio)默认"外接",由 values.<svc>.url 提供。
+#     原因:k8s 集群通常已有共享 postgres/redis;helm chart 不应再起一份重复。
+#     若你想顺便起一份, 用 ``--set <svc>.deploy.enabled=true`` 一键开。
+#   * 推理后端不在 chart 里管(GPU 调度太重,留给 ServingCRDs 之类的 operator)。
+#   * 镜像默认 docker.io/chayuan/*;企业内网需要 mirror,改 ``image.registry``。
+
+global:
+  registry: docker.io
+  imagePullSecrets: []
+  storageClass: ""
+
+# ============================================================
+# chayuan-gateway —— OpenAI 兼容入口 + 跨模型路由
+# ============================================================
+gateway:
+  enabled: true
+  replicas: 3
+  image:
+    repository: chayuan/chayuan-gateway
+    tag: "6.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8088
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: gateway.chayuan.local
+        paths: ["/"]
+    tls: []
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 12
+    targetCPUUtilizationPercentage: 70
+  env:
+    REDIS_URL: ""        # 通过下方 values.redis.url 注入
+    DATABASE_URL: ""     # 通过下方 values.postgres.url 注入
+    CHAYUAN_MIRROR: "hf-mirror"
+
+# ============================================================
+# chayuan-server —— NiceGUI 配置面板 + 业务 API + KB
+# ============================================================
+server:
+  enabled: true
+  replicas: 2
+  image:
+    repository: chayuan/chayuan-server
+    tag: "6.0.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 62581
+  ingress:
+    enabled: false
+    className: "nginx"
+    hosts:
+      - host: server.chayuan.local
+        paths: ["/"]
+    tls: []
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  persistence:
+    enabled: true
+    accessMode: ReadWriteMany
+    size: 50Gi
+    storageClass: ""
+
+# ============================================================
+# 外接依赖配置 (默认假设外部有,helm 不部署)
+# ============================================================
+postgres:
+  url: "postgresql://chayuan:CHANGE_ME@postgres-primary.shared:5432/chayuan"
+  deploy:
+    enabled: false   # 设为 true 会启 bitnami/postgresql subchart (需先 helm dep update)
+
+redis:
+  url: "redis://redis-master.shared:6379/0"
+  deploy:
+    enabled: false
+
+milvus:
+  url: "milvus-standalone.shared:19530"
+  deploy:
+    enabled: false
+
+minio:
+  endpoint: "minio.shared:9000"
+  accessKey: "chayuan"
+  secretKey: "CHANGE_ME"
+  bucket: "chayuan-files"
+  deploy:
+    enabled: false
+
+onlyoffice:
+  url: "http://onlyoffice.shared/"
+  jwtSecret: "CHANGE_ME"
+  deploy:
+    enabled: false
+
+# ============================================================
+# 可观测 (Prometheus / Tempo) — 默认关
+# ============================================================
+observability:
+  prometheus:
+    enabled: false
+    serviceMonitor: false
+  tracing:
+    enabled: false
+    otlpEndpoint: "http://tempo:4318"

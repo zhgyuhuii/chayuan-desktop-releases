@@ -1,0 +1,20 @@
+{
+  "id_card.png": {
+    "must_contain": ["姓名", "性别", "民族"],
+    "must_not_contain": [],
+    "min_length": 30,
+    "description": "中国大陆二代居民身份证;关键字段:姓名/性别/民族/出生/住址/号码"
+  },
+  "invoice.png": {
+    "must_contain": ["发票", "金额"],
+    "must_not_contain": [],
+    "min_length": 50,
+    "description": "通用机打发票;字段:抬头/金额/税号/日期"
+  },
+  "handwriting.png": {
+    "must_contain": [],
+    "must_not_contain": [],
+    "min_length": 5,
+    "description": "中文手写文本;OCR 普遍能识别就算过(min_length 5 字符)"
+  }
+}

@@ -1,0 +1,23 @@
+# whisper-server 平台预编译二进制布局:
+#   win-x64/     ← upstream whisper-bin-x64.zip 解压(v1.7.6+)
+#   linux-x64/   ← upstream 没发,需要源码 cmake build,留空目录(.gitkeep 占位)
+#   macos-arm64/ ← upstream 没发,brew install whisper-cpp 或源码 build,留空目录
+#
+# 现有的平台子目录**入 git**;顶层扁平布局(install 脚本旧落点)不入 git。
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+/whisper-server
+/VERSION
+
+# chayuan-server/.gitignore 里的 *.so / *.dylib / build/ / dist/ 等 Python 通配
+# 会顺带屏蔽掉平台子目录里的 binary。下面 negation 显式取消屏蔽:
+!*/whisper-server
+!*/whisper-server.exe
+!*/*.so
+!*/*.so.*
+!*/*.dll
+!*/*.dylib
+!*/VERSION
+!*/LICENSE

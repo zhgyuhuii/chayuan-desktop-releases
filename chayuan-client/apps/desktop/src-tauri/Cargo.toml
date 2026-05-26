@@ -1,0 +1,86 @@
+[package]
+name = "chayuan-desktop"
+version = "0.1.0"
+description = "察元 AI 桌面客户端"
+authors = ["Chayuan AI"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "chayuan_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0.0", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# NOTE: ``devtools`` feature 让 release build 也能开 DevTools(F12 / 右键)。
+# 单机版 v0 ship 前用来排查白屏 / JS 抛错;GA 之前移掉这个 feature,生产
+# 用户右键开发者工具会暴露内部 API + 增加被注入风险。
+# 版本声明的 minor 要跟 package.json 的 @tauri-apps/api(^2.11)对齐 —— tauri CLI
+# 的 build 会校验「tauri crate ↔ @tauri-apps/api 同 major.minor」,不一致直接报错。
+# 写 "2.11"(而非 "2")还能强制旧 Cargo.lock 里残留的 2.1.x 失效 → 重新解析。
+tauri = { version = "2.11", features = ["tray-icon", "image-png", "devtools"] }
+tauri-plugin-clipboard-manager = "2.2.1"
+tauri-plugin-dialog = "2.2.0"
+tauri-plugin-fs = "2.2.0"
+tauri-plugin-global-shortcut = "2.2.0"
+tauri-plugin-http = { version = "2.2.0", features = ["unsafe-headers"] }
+tauri-plugin-notification = "2.2.1"
+tauri-plugin-os = "2.2.0"
+tauri-plugin-process = "2.2.0"
+tauri-plugin-shell = "2.2.0"
+# 单实例:已在运行时再双击图标不开新进程,而是唤回首个实例的窗口。
+tauri-plugin-single-instance = "2.2.0"
+tauri-plugin-sql = { version = "2.2.0", features = ["sqlite"] }
+tauri-plugin-stronghold = "2.2.0"
+tauri-plugin-updater = "2.3.0"
+tauri-plugin-window-state = "2.2.0"
+machine-uid = "0.5"
+sha2 = "0.10"
+hex = "0.4"
+image = "0.25"
+# Stronghold 内部用 ChaCha20-Poly1305,密钥需要确定的 32 byte。raw password 传字符串
+# bytes 在长度 / 字符集不匹配时 libsodium 会抛 "illegal non-contiguous size"。
+# 用 argon2id 把 vault password 派生成稳定 32 byte 后再喂给 Stronghold。
+argon2 = "0.5"
+# 跨平台用户目录解析(macOS Application Support / Windows %APPDATA% / Linux XDG)。
+# 与服务端 ``chayuan.paths`` 算法对齐,确保前后端默认数据目录一致。
+dirs = "5"
+# 同步 HTTP(Phase 3 sidecar 健康探测 /healthz,只 localhost 不需要 TLS)。
+ureq = { version = "2", default-features = false }
+
+# 截图依赖 —— 仅在非 Linux 平台引入。
+#
+# 为什么按 target 分:xcap 在 Linux 上无条件依赖 pipewire(没有 feature 能关掉,
+# Wayland 截屏走 pipewire),pipewire 又拖 libspa。libspa 的手写绑定要对得上
+# 系统 libpipewire-0.3-dev / SPA C 头,而用户系统的 SPA 头里 spa_video_info_raw
+# 已删 flags 字段、modifier 从 u64 改成 i64 —— 没有任何已发布的 libspa crate
+# 版本(0.8.0 / 0.9.2 都试过)能匹配,Linux build 必挂
+# (E0609 no field `flags` / E0308 mismatched types)。
+# 升版本治不好,唯一可靠出路是 Linux 根本不引入 xcap → 不编译 pipewire/libspa。
+# 截图是辅助功能(Ctrl+Shift+S),Linux 上由 src/lib.rs 的桩实现返回「暂不支持」。
+#
+# Windows / macOS 不受影响:Windows 截屏走 `windows` crate、macOS 走系统 API,
+# 都不碰 pipewire,继续正常用 xcap。
+# 0.0.14 在新 Rust + 新 core-foundation 下挂 E0282(macos/boxed.rs:22);0.1+ 已修。
+# 我们只用 Monitor::all() / capture_image() / x()/y()/width()/height(),这些签名
+# 在 xcap 0.6→0.9 完全一致。
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+xcap = "0.9"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
+
+# 本地迭代用快速 release profile:关 LTO + 拉满 codegen-units,编译能省 50%+。
+# 二进制体积 / 启动速度略差,但桌面 sidecar 重头是 Python(>1GB),Rust 这点
+# 差异忽略不计。生产 ship 包仍用默认 [profile.release](LTO=fat,codegen-units=1)。
+#
+# 用法:tauri build --profile release-fast(已接到 pnpm build:desktop:fast)。
+[profile.release-fast]
+inherits = "release"
+lto = false
+codegen-units = 16
+strip = "symbols"

@@ -1,0 +1,51 @@
+# Build artifacts -- never go into the image
+**/build/
+**/dist/
+**/dist-lite/
+**/dist-integrated/
+**/target/
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# IDE / SCM
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Desktop / Tauri (Docker 只装 server,不需要客户端)
+chayuan-client/
+
+# Server bundle artifacts (image 里源码现 build,不用 Windows/Mac frozen)
+chayuan-server/dist/
+chayuan-server/build/
+
+# bundled_models 体积大,用 docker volume 挂入,不打进 image
+chayuan-server/vendor/bundled_models/
+
+# 非 Linux 平台的 sidecar 二进制(只保留 linux-x64,其它 .dockerignore 走子规则)
+chayuan-server/vendor/services/llama-server/win-*/
+chayuan-server/vendor/services/llama-server/macos-*/
+chayuan-server/vendor/services/whisper-server/win-*/
+chayuan-server/vendor/services/whisper-server/macos-*/
+
+# Torch wheels(chayuan_packaging 用,Docker 直接 pip install)
+chayuan-server/vendor/torch_wheels/
+chayuan-server/vendor/runtimes/
+
+# Docker 自己的输出目录(volume 挂载点)
+docker/data/
+docker/bundled_models/
+docker/config/
+docker/logs/
+
+# 用户/CI 残留
+*.log
+*.tmp

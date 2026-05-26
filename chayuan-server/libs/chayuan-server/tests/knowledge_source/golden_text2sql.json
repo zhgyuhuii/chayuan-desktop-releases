@@ -1,0 +1,66 @@
+{
+  "description": "Text2SQL Golden 数据集：随 prompt / LangGraph / Vanna 演进做回归基线。CI 以此为门禁：命中率不得低于上一次基线。",
+  "schema_seed_sql": "CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL NOT NULL, category TEXT); CREATE TABLE orders (id INTEGER PRIMARY KEY, product_id INTEGER, qty INTEGER, created_at TEXT); INSERT INTO products (id,name,price,category) VALUES (1,'iPhone 15',7999.0,'phone'),(2,'MacBook Pro',19999.0,'laptop'),(3,'AirPods',1299.0,'audio'); INSERT INTO orders (id,product_id,qty,created_at) VALUES (1,1,2,'2026-04-01'),(2,2,1,'2026-04-02'),(3,3,5,'2026-04-03');",
+  "cases": [
+    {
+      "id": "G001",
+      "question": "列出所有商品名称和价格",
+      "reference_sql": "SELECT name, price FROM products",
+      "expected_result_contains": ["iPhone 15", "MacBook Pro", "AirPods"]
+    },
+    {
+      "id": "G002",
+      "question": "价格最高的商品",
+      "reference_sql": "SELECT name FROM products ORDER BY price DESC LIMIT 1",
+      "expected_result_contains": ["MacBook Pro"]
+    },
+    {
+      "id": "G003",
+      "question": "AirPods 卖出了几件？",
+      "reference_sql": "SELECT SUM(o.qty) FROM orders o JOIN products p ON o.product_id = p.id WHERE p.name = 'AirPods'",
+      "expected_result_contains": ["5"]
+    },
+    {
+      "id": "G004",
+      "question": "商品按价格从低到高排序",
+      "reference_sql": "SELECT name, price FROM products ORDER BY price ASC",
+      "expected_result_contains": ["AirPods", "iPhone 15", "MacBook Pro"]
+    },
+    {
+      "id": "G005",
+      "question": "手机类目的商品总共有几件",
+      "reference_sql": "SELECT COUNT(*) FROM products WHERE category = 'phone'",
+      "expected_result_contains": ["1"]
+    },
+    {
+      "id": "G006",
+      "question": "2026-04-02 这一天的订单",
+      "reference_sql": "SELECT * FROM orders WHERE created_at = '2026-04-02'",
+      "expected_result_contains": ["2026-04-02"]
+    },
+    {
+      "id": "G007",
+      "question": "平均商品价格",
+      "reference_sql": "SELECT AVG(price) FROM products",
+      "expected_result_contains": []
+    },
+    {
+      "id": "G008",
+      "question": "最便宜的商品是什么类目",
+      "reference_sql": "SELECT category FROM products ORDER BY price ASC LIMIT 1",
+      "expected_result_contains": ["audio"]
+    },
+    {
+      "id": "G009",
+      "question": "查询每个类目的商品数量",
+      "reference_sql": "SELECT category, COUNT(*) FROM products GROUP BY category",
+      "expected_result_contains": ["phone", "laptop", "audio"]
+    },
+    {
+      "id": "G010",
+      "question": "销量最高的商品的名称",
+      "reference_sql": "SELECT p.name FROM products p JOIN orders o ON p.id = o.product_id GROUP BY p.id ORDER BY SUM(o.qty) DESC LIMIT 1",
+      "expected_result_contains": ["AirPods"]
+    }
+  ]
+}

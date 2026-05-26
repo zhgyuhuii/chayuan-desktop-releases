@@ -1,0 +1,325 @@
+{
+  "summary": {
+    "total": 30,
+    "pass": 30,
+    "skip": 0,
+    "fail": 0,
+    "by_group": {
+      "1-health": {
+        "pass": 4,
+        "skip": 0,
+        "fail": 0
+      },
+      "2-auth": {
+        "pass": 1,
+        "skip": 0,
+        "fail": 0
+      },
+      "3-kb": {
+        "pass": 6,
+        "skip": 0,
+        "fail": 0
+      },
+      "4-ks": {
+        "pass": 5,
+        "skip": 0,
+        "fail": 0
+      },
+      "5-governance": {
+        "pass": 7,
+        "skip": 0,
+        "fail": 0
+      },
+      "6-storage": {
+        "pass": 3,
+        "skip": 0,
+        "fail": 0
+      },
+      "7-image": {
+        "pass": 2,
+        "skip": 0,
+        "fail": 0
+      },
+      "8-chat": {
+        "pass": 1,
+        "skip": 0,
+        "fail": 0
+      },
+      "9-tools": {
+        "pass": 1,
+        "skip": 0,
+        "fail": 0
+      }
+    },
+    "failures": [],
+    "slowest": [
+      {
+        "group": "3-kb",
+        "name": "POST /knowledge_base/create_knowledge_base",
+        "elapsed_ms": 396.7
+      },
+      {
+        "group": "3-kb",
+        "name": "POST /knowledge_base/search_docs",
+        "elapsed_ms": 337.9
+      },
+      {
+        "group": "8-chat",
+        "name": "POST /chat/v2/chat (sync)",
+        "elapsed_ms": 112.3
+      },
+      {
+        "group": "5-governance",
+        "name": "GET /governance/usage/today",
+        "elapsed_ms": 44.4
+      },
+      {
+        "group": "3-kb",
+        "name": "GET /knowledge_base/list_files",
+        "elapsed_ms": 30.8
+      }
+    ]
+  },
+  "all": [
+    {
+      "group": "1-health",
+      "name": "GET /healthz",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 2.894163131713867,
+      "message": ""
+    },
+    {
+      "group": "1-health",
+      "name": "GET /readyz",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 5.638837814331055,
+      "message": ""
+    },
+    {
+      "group": "1-health",
+      "name": "GET /metrics",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 2.825498580932617,
+      "message": ""
+    },
+    {
+      "group": "1-health",
+      "name": "GET /docs",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 2.475261688232422,
+      "message": ""
+    },
+    {
+      "group": "2-auth",
+      "name": "GET /auth/me",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 6.713151931762695,
+      "message": ""
+    },
+    {
+      "group": "3-kb",
+      "name": "GET /knowledge_base/list_knowledge_bases",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 9.762763977050781,
+      "message": ""
+    },
+    {
+      "group": "3-kb",
+      "name": "POST /knowledge_base/create_knowledge_base",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 396.71850204467773,
+      "message": ""
+    },
+    {
+      "group": "3-kb",
+      "name": "GET /knowledge_base/list_files",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 30.831575393676758,
+      "message": ""
+    },
+    {
+      "group": "3-kb",
+      "name": "POST /knowledge_base/upload_docs (multipart)",
+      "status": "pass",
+      "http_status": 403,
+      "elapsed_ms": 8.417367935180664,
+      "message": ""
+    },
+    {
+      "group": "3-kb",
+      "name": "POST /knowledge_base/search_docs",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 337.90016174316406,
+      "message": ""
+    },
+    {
+      "group": "3-kb",
+      "name": "POST /knowledge_base/delete_knowledge_base",
+      "status": "pass",
+      "http_status": 403,
+      "elapsed_ms": 9.039163589477539,
+      "message": ""
+    },
+    {
+      "group": "4-ks",
+      "name": "GET /knowledge_source/dialects",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 3.299236297607422,
+      "message": ""
+    },
+    {
+      "group": "4-ks",
+      "name": "GET /knowledge_source/",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 13.097524642944336,
+      "message": ""
+    },
+    {
+      "group": "4-ks",
+      "name": "POST /knowledge_source/test_connection (sqlite)",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 12.913942337036133,
+      "message": ""
+    },
+    {
+      "group": "4-ks",
+      "name": "POST /knowledge_source/test_connection (invalid)",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 6.699800491333008,
+      "message": ""
+    },
+    {
+      "group": "4-ks",
+      "name": "POST /knowledge_source/multi_search_sync",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 6.720066070556641,
+      "message": ""
+    },
+    {
+      "group": "5-governance",
+      "name": "GET /governance/policy",
+      "status": "pass",
+      "http_status": 403,
+      "elapsed_ms": 4.3926239013671875,
+      "message": ""
+    },
+    {
+      "group": "5-governance",
+      "name": "POST /governance/pii/scan",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 15.045166015625,
+      "message": ""
+    },
+    {
+      "group": "5-governance",
+      "name": "POST /governance/guardrail/check_input",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 7.538795471191406,
+      "message": ""
+    },
+    {
+      "group": "5-governance",
+      "name": "POST /governance/guardrail/check_output",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 5.348920822143555,
+      "message": ""
+    },
+    {
+      "group": "5-governance",
+      "name": "GET /governance/usage/today",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 44.371604919433594,
+      "message": ""
+    },
+    {
+      "group": "5-governance",
+      "name": "GET /governance/guardrail/info",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 5.869388580322266,
+      "message": ""
+    },
+    {
+      "group": "5-governance",
+      "name": "GET /governance/lineage",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 8.946895599365234,
+      "message": ""
+    },
+    {
+      "group": "6-storage",
+      "name": "GET /storage/status",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 4.442691802978516,
+      "message": ""
+    },
+    {
+      "group": "6-storage",
+      "name": "GET /storage/list (kb_content)",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 4.904031753540039,
+      "message": ""
+    },
+    {
+      "group": "6-storage",
+      "name": "POST /storage/test_connection (MinIO)",
+      "status": "pass",
+      "http_status": 403,
+      "elapsed_ms": 4.3697357177734375,
+      "message": ""
+    },
+    {
+      "group": "7-image",
+      "name": "GET /image_models/",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 10.275125503540039,
+      "message": ""
+    },
+    {
+      "group": "7-image",
+      "name": "GET /image_models/disk_usage",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 4.800558090209961,
+      "message": ""
+    },
+    {
+      "group": "8-chat",
+      "name": "POST /chat/v2/chat (sync)",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 112.32447624206543,
+      "message": ""
+    },
+    {
+      "group": "9-tools",
+      "name": "GET /tools",
+      "status": "pass",
+      "http_status": 200,
+      "elapsed_ms": 27.724742889404297,
+      "message": ""
+    }
+  ]
+}

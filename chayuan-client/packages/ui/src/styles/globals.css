@@ -1,0 +1,121 @@
+@import "tailwindcss";
+/* 走 monorepo 相对路径:Tailwind v4 Vite 插件在 Windows 下解析 pnpm
+   workspace 的 package.json#exports 不稳,改相对路径绕过 */
+@import "../../../design-tokens/src/tokens.css";
+
+/**
+ * Tailwind v4 auto content detection 仅扫 entry app(apps/web) 根目录;
+ * 我们的 JSX 全在 packages/{app,ui,...}/src 里,且 vite.config.ts 把
+ * @chayuan/* alias 到 packages/*\/src/index.ts,Tailwind 看不到这些文件,
+ * 不会生成对应 utility。显式 @source 把整个 monorepo packages/apps 纳入扫描。
+ * 路径相对当前文件: packages/ui/src/styles/globals.css → ../../../.. = repo root
+ */
+@source "../../../../packages/**/*.{ts,tsx,js,jsx}";
+@source "../../../../apps/**/*.{ts,tsx,js,jsx,html}";
+
+/**
+ * Tailwind v4 的 `dark:` variant 默认是 `@media (prefers-color-scheme:dark)`,
+ * 只跟随**操作系统**色彩方案。但本应用主题由设置页切换:ThemeBridge 把
+ * settings.theme 映射成 <html data-theme="dark"> + .dark 类(见
+ * features/settings/ThemeBridge.tsx),并不改动系统 prefers-color-scheme。
+ * 默认 variant 与本应用主题机制对不上 —— 设置里切深色时所有 `dark:` 工具类
+ * 都不生效(如首页 5 张工具卡的 gradient)。
+ * 这里重定义 `dark:` 变体,使其跟随应用内主题属性 / 类:
+ *   data-theme="dark" 或 .dark 出现在祖先节点即命中。
+ * 与 design-tokens/tokens.css 的 [data-theme='dark'] 变量两套保持联动。
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
+/**
+ * 兼容补丁:旧组件用的语义类(border/body/font-feature)。
+ * --background / --primary 等变量与 @theme 桥接已由 design-tokens/tokens.css 提供。
+ */
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "PingFang SC", "HarmonyOS Sans", "Microsoft YaHei", system-ui, sans-serif;
+  }
+
+  /* 字号设置接管 root font-size,Tailwind 的 rem 自然全站缩放。
+     桌面 Tauri WebView 在 Windows 高 DPI 下 14px 偏小,提到 16px。 */
+  html {
+    font-size: 16px;
+  }
+
+  /* embed.js 浮动球内嵌模式：隐藏 Shell 外壳（Sidebar / TabBar / 顶栏），
+     让 iframe 内只看到应用本体。由 PublicAppPage 触发添加 body 类。 */
+  body.cy-embed-mode [data-shell="sidebar"],
+  body.cy-embed-mode [data-shell="tab-bar"],
+  body.cy-embed-mode [data-shell="topbar"] {
+    display: none !important;
+  }
+  body.cy-embed-mode [data-shell="main"] {
+    margin: 0 !important;
+    height: 100vh !important;
+    width: 100vw !important;
+  }
+
+  /* 工作区"专注模式"(F11):隐藏 Sidebar / TabBar / 顶栏,Main 区占满。
+     与 cy-embed-mode 不同的是:embed 是嵌入在第三方页面里;fullscreen 是用户
+     主动按 F11 进入,Esc 退出。两者样式效果相似,但触发与生命周期独立。 */
+  body.cy-fullscreen [data-shell="sidebar"],
+  body.cy-fullscreen [data-shell="tab-bar"],
+  body.cy-fullscreen [data-shell="topbar"] {
+    display: none !important;
+  }
+  body.cy-fullscreen [data-shell="main"] {
+    height: 100vh !important;
+  }
+  /* 进入 fullscreen 时把右栏(main-column)的网格行简化成单行,Main 占满 */
+  body.cy-fullscreen [data-shell="main-column"] {
+    grid-template-rows: 1fr !important;
+  }
+
+  /* KB 检索高亮:点击"预览"后跳转并标黄;800ms 后渐隐为浅黄保留底色。
+     深色模式下用低饱和度黄,避免刺眼。 */
+  .cy-kb-highlight {
+    background: #FFF59D;
+    transition: background 600ms;
+    border-radius: 2px;
+    padding: 0 2px;
+  }
+  .cy-kb-highlight--faded {
+    background: #FFF9C4;
+  }
+  .dark .cy-kb-highlight,
+  [data-theme='dark'] .cy-kb-highlight {
+    background: rgba(250, 204, 21, 0.35);
+    color: #FEFCE8;
+  }
+  .dark .cy-kb-highlight--faded,
+  [data-theme='dark'] .cy-kb-highlight--faded {
+    background: rgba(250, 204, 21, 0.18);
+  }
+
+  /* ASR 流式 ── volatile(未确认尾部)文字样式
+     Tiptap 自定义 mark `asrVolatile`(features/notes/AsrVolatileMark.ts)渲染为
+     <span class="cy-asr-volatile">,灰色斜体提示"这部分还在校准,可能改"。
+     用户感知:已 commit(黑) + 末尾 volatile(灰斜),下次 chunk 来 replace。 */
+  .cy-asr-volatile {
+    color: rgba(148, 163, 184, 0.95);  /* slate-400 */
+    font-style: italic;
+    transition: color 200ms ease;
+  }
+  .dark .cy-asr-volatile,
+  [data-theme='dark'] .cy-asr-volatile {
+    color: rgba(148, 163, 184, 0.85);
+  }
+}
+
+/* 首页底部走马灯 — 横向无限循环,track 复制两份,平移 -50% 无缝接续。
+   28s 跑完一轮,放在 globals 而不是组件级,因为 Tailwind v4 的 arbitrary
+   keyframe `animate-[chayuan-marquee_...]` 需要 keyframe 全局可解析。 */
+@keyframes chayuan-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}

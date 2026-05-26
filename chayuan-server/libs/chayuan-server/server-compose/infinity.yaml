@@ -1,0 +1,39 @@
+# Infinity — 文本嵌入 / 图像嵌入(CLIP) / 重排 一体化 server
+# ---------------------------------------------------------------------------
+# 启动:  docker compose -f infinity.yaml up -d --wait
+# 默认:  CPU 模式可用,适合轻量;GPU 加速取消下面 runtime: nvidia 注释。
+#
+# 镜像版本(89-13):  锁 0.0.75 — 该版本起原生支持 image-embedding endpoint
+# (POST /embeddings 接收 base64 图片输入)。低于此版本部分 CLIP 模型不可用。
+#
+# MODEL_ID(89-13):  通过环境变量声明加载哪个模型;chayuan-server 写
+# capability_defaults.clip 时会自动同步改这里(POST /image_models/mount_to_infinity)。
+#
+# 共享 hf-cache(89-13):  挂载宿主机 ~/.cache/huggingface 到容器,模型广场下载
+# 到 hf-cache 的权重 Infinity 启动时直接命中,无需二次下载。
+# ---------------------------------------------------------------------------
+
+services:
+  infinity:
+    image: michaelf34/infinity:0.0.75
+    container_name: chayuan-infinity
+    restart: unless-stopped
+    environment:
+      - MODEL_ID=jinaai/jina-clip-v1
+      - PORT=7997
+      - BATCH_SIZE=16
+    ports:
+      - "37997:7997"
+    volumes:
+      # 把宿主机 hf-cache 挂进容器,与 chayuan_modelmgr 下载共享
+      - ${HOME}/.cache/huggingface:/app/.cache/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:7997/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    # 如需 GPU 加速,取消下面三行注释:
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all

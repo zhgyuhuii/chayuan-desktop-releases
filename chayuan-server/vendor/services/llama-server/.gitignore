@@ -1,0 +1,33 @@
+# llama-server 平台预编译二进制布局:
+#   <os>-<arch>[-<cpu-variant>]/
+#
+# 入 git 的平台子目录:
+#   linux-x64/        Ubuntu 22.04+ glibc 2.34, x86_64
+#   linux-arm64/      (upstream 没发,占位)
+#   macos-arm64/      Apple Silicon (M1+) + Metal shader
+#   macos-x64/        Intel Mac
+#   win-x64/          Windows x86_64, AVX2 默认(2013+ Haswell+)
+#   win-x64-avx/      Win x86_64, AVX(Sandy/Ivy Bridge, 2011-2013)
+#   win-x64-avx512/   Win x86_64, AVX-512(Skylake-X / Ice Lake Xeon)
+#   win-x64-noavx/    Win x86_64, 无 AVX(Pentium/Celeron / 部分 VM)
+#   win-arm64/        Windows on ARM(Surface Pro X / Copilot+ PC)
+#
+# 顶层(扁平)布局是 install 脚本现拉现写的旧落点,不入 git:
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+/llama-server
+/VERSION
+
+# chayuan-server/.gitignore 里的 *.so / *.dylib / build/ / dist/ 等 Python 通配
+# 会顺带屏蔽掉平台子目录里的 binary。下面 negation 显式取消屏蔽:
+!*/llama-server
+!*/llama-server.exe
+!*/*.so
+!*/*.so.*
+!*/*.dll
+!*/*.dylib
+!*/*.metal
+!*/VERSION
+!*/LICENSE

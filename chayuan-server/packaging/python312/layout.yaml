@@ -1,0 +1,329 @@
+# 察元一体化平台 · 跨平台打包"该放什么二进制"约定（Python 3.12 packager 读）
+#
+# 设计要点
+# ========
+# * 一个 yaml 描述「全部资源 + 平台矩阵」，packager 自动按 (os, arch) 取对应行；
+# * 字段统一：name / dest / matrix / source / version / sha256；
+# * 平台 key 命名：{linux,mac,win}-{x86_64,arm64} 共 6 组；
+# * `source` 支持：
+#     - github://OWNER/REPO              （取 latest release，按 asset_pattern 匹配）
+#     - https://...                       （直接 URL；多平台时在 matrix 中重写）
+#     - hf-mirror://REPO                  （huggingface_hub 优先，REST 兜底）
+#     - local://relative/path             （本地已有，不下载）
+# * `dest` 是相对 chayuan-server 仓库根；packager 解压 / 移动到位；
+# * `unpack` 控制解压策略：tar.gz / tar.zst / zip / single-file；
+# * `optional: true` 表示打包时缺资源仅警告，不报错（用于 lite 包不带的项）。
+#
+# 配套命令（详见 packaging/python312/README.md）：
+#   python -m chayuan_packaging fetch    --target linux --arch x86_64 --release lite
+#   python -m chayuan_packaging build    --target linux --arch x86_64 --release lite
+#   python -m chayuan_packaging audit    # 查看已经放进 vendor / models 的内容
+#   python -m chayuan_packaging clean    # 清空 packaging/.cache + build 产物
+
+# ────────────────────────────────────────────────────────────────────
+# §1 内嵌运行时（Python 3.12 / JDK 17 / Node 20）
+# ────────────────────────────────────────────────────────────────────
+runtimes:
+  - name: python312
+    dest: vendor/runtimes/python
+    source: github://astral-sh/python-build-standalone
+    version: "20241119"        # release tag
+    unpack: tar.gz
+    matrix:
+      linux-x86_64: cpython-3.12.*-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz
+      linux-arm64:  cpython-3.12.*-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz
+      mac-x86_64:   cpython-3.12.*-x86_64-apple-darwin-install_only_stripped.tar.gz
+      mac-arm64:    cpython-3.12.*-aarch64-apple-darwin-install_only_stripped.tar.gz
+      win-x86_64:   cpython-3.12.*-x86_64-pc-windows-msvc-install_only_stripped.tar.gz
+      win-arm64:    cpython-3.12.*-aarch64-pc-windows-msvc-install_only_stripped.tar.gz
+
+  - name: jdk17
+    dest: vendor/runtimes/jdk17
+    source: https://api.adoptium.net/v3/binary/latest/17/ga/{os}/{arch}/jdk/hotspot/normal/eclipse
+    unpack: tar.gz
+    optional: true             # 单机 lite 默认不需要 jdk
+    matrix:
+      linux-x86_64: { os: linux, arch: x64 }
+      linux-arm64:  { os: linux, arch: aarch64 }
+      mac-x86_64:   { os: mac,   arch: x64 }
+      mac-arm64:    { os: mac,   arch: aarch64 }
+      win-x86_64:   { os: windows, arch: x64, ext: zip }
+      win-arm64:    { os: windows, arch: aarch64, ext: zip }
+
+  - name: nodejs20
+    dest: vendor/runtimes/nodejs
+    source: https://nodejs.org/dist/{version}/node-{version}-{os}-{arch}.{ext}
+    version: v20.18.0
+    optional: true
+    matrix:
+      linux-x86_64: { os: linux,   arch: x64,    ext: tar.xz }
+      linux-arm64:  { os: linux,   arch: arm64,  ext: tar.xz }
+      mac-x86_64:   { os: darwin,  arch: x64,    ext: tar.gz }
+      mac-arm64:    { os: darwin,  arch: arm64,  ext: tar.gz }
+      win-x86_64:   { os: win,     arch: x64,    ext: zip    }
+      win-arm64:    { os: win,     arch: arm64,  ext: zip    }
+
+# ────────────────────────────────────────────────────────────────────
+# §2 后台基础服务（Postgres / Redis / MinIO / Milvus / Docker）
+# ────────────────────────────────────────────────────────────────────
+services:
+  - name: postgres16
+    dest: vendor/services/postgres
+    optional: true
+    # EnterpriseDB 二进制（含 win/linux/mac，aarch64 兜底用 brew/apt 包提示）
+    source: https://get.enterprisedb.com/postgresql/postgresql-{version}-{platform_tag}-binaries.{ext}
+    version: "16.4"
+    matrix:
+      linux-x86_64: { platform_tag: 1-linux-x64,           ext: tar.gz }
+      linux-arm64:  { platform_tag: 1-linux-arm64,         ext: tar.gz }
+      mac-x86_64:   { platform_tag: 1-osx,                 ext: zip }
+      mac-arm64:    { platform_tag: 1-osx,                 ext: zip }   # universal x64+arm
+      win-x86_64:   { platform_tag: 1-windows-x64-binaries, ext: zip }
+      win-arm64:    { platform_tag: 1-windows-x64-binaries, ext: zip }   # arm64 走 emulation
+
+  - name: redis74
+    dest: vendor/services/redis
+    optional: true
+    matrix:
+      linux-x86_64:
+        source: https://download.redis.io/releases/redis-{version}.tar.gz   # source build；packager 跑 make 编译
+        version: "7.4.0"
+        unpack: tar.gz+make
+      linux-arm64:
+        source: https://download.redis.io/releases/redis-{version}.tar.gz
+        version: "7.4.0"
+        unpack: tar.gz+make
+      mac-x86_64:
+        source: https://download.redis.io/releases/redis-{version}.tar.gz
+        version: "7.4.0"
+        unpack: tar.gz+make
+      mac-arm64:
+        source: https://download.redis.io/releases/redis-{version}.tar.gz
+        version: "7.4.0"
+        unpack: tar.gz+make
+      win-x86_64:
+        # Memurai is the maintained Windows port; as fallback the tporadowski msi
+        source: github://tporadowski/redis
+        version_pattern: "*"
+        asset_pattern: "Redis-x64-*.zip"
+        unpack: zip
+      win-arm64:
+        source: github://tporadowski/redis
+        asset_pattern: "Redis-x64-*.zip"
+        unpack: zip
+
+  - name: minio
+    dest: vendor/services/minio
+    optional: true
+    source: https://dl.min.io/server/minio/release/{platform_tag}/minio{ext}
+    matrix:
+      linux-x86_64: { platform_tag: linux-amd64,   ext: "" }
+      linux-arm64:  { platform_tag: linux-arm64,   ext: "" }
+      mac-x86_64:   { platform_tag: darwin-amd64,  ext: "" }
+      mac-arm64:    { platform_tag: darwin-arm64,  ext: "" }
+      win-x86_64:   { platform_tag: windows-amd64, ext: ".exe" }
+      win-arm64:    { platform_tag: windows-amd64, ext: ".exe" }
+
+  - name: milvus
+    dest: vendor/services/milvus
+    optional: true
+    source: github://milvus-io/milvus
+    version: "v2.6.0"
+    matrix:
+      linux-x86_64: milvus-{version}-linux-amd64.tar.gz
+      linux-arm64:  milvus-{version}-linux-arm64.tar.gz
+      mac-x86_64:   milvus-lite-{version}-darwin-amd64.tar.gz   # mac 单机走 milvus-lite
+      mac-arm64:    milvus-lite-{version}-darwin-arm64.tar.gz
+      win-x86_64:   milvus-lite-{version}-windows-amd64.tar.gz
+      win-arm64:    milvus-lite-{version}-windows-amd64.tar.gz   # x64 二进制走 emulation
+
+  - name: docker-compose
+    dest: vendor/services/docker-compose
+    optional: true
+    note: |
+      仅打包 docker compose CLI；docker daemon 自身需要用户/管理员另装。
+      mac/win 单机用户提示安装 Docker Desktop（同时把 onlyoffice 等 compose 任务激活）。
+    source: github://docker/compose
+    version: "v2.29.0"
+    matrix:
+      linux-x86_64: docker-compose-linux-x86_64
+      linux-arm64:  docker-compose-linux-aarch64
+      mac-x86_64:   docker-compose-darwin-x86_64
+      mac-arm64:    docker-compose-darwin-aarch64
+      win-x86_64:   docker-compose-windows-x86_64.exe
+      win-arm64:    docker-compose-windows-x86_64.exe
+
+  - name: elasticsearch
+    dest: vendor/services/elastic
+    optional: true
+    source: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{version}-{platform_tag}.{ext}
+    version: "8.15.0"
+    matrix:
+      linux-x86_64: { platform_tag: linux-x86_64,   ext: tar.gz }
+      linux-arm64:  { platform_tag: linux-aarch64,  ext: tar.gz }
+      mac-x86_64:   { platform_tag: darwin-x86_64,  ext: tar.gz }
+      mac-arm64:    { platform_tag: darwin-aarch64, ext: tar.gz }
+      win-x86_64:   { platform_tag: windows-x86_64, ext: zip }
+      win-arm64:    { platform_tag: windows-x86_64, ext: zip }
+
+# ────────────────────────────────────────────────────────────────────
+# §3 推理运行时（Ollama / llama.cpp / whisper.cpp / piper / ...）
+# ────────────────────────────────────────────────────────────────────
+inference:
+  - name: ollama
+    dest: vendor/runtimes/ollama
+    source: github://ollama/ollama
+    matrix:
+      linux-x86_64: ollama-linux-amd64.tgz
+      linux-arm64:  ollama-linux-arm64.tgz
+      mac-x86_64:   Ollama-darwin.zip      # universal binary
+      mac-arm64:    Ollama-darwin.zip
+      win-x86_64:   ollama-windows-amd64.zip
+      win-arm64:    ollama-windows-amd64.zip   # emulation；arm64 native 待 upstream
+
+  - name: llama-cpp
+    dest: vendor/runtimes/llama-cpp
+    optional: true
+    source: github://ggerganov/llama.cpp
+    matrix:
+      linux-x86_64: llama-{version}-bin-ubuntu-x64.zip
+      linux-arm64:  llama-{version}-bin-ubuntu-arm64.zip
+      mac-x86_64:   llama-{version}-bin-macos-x64.zip
+      mac-arm64:    llama-{version}-bin-macos-arm64.zip
+      win-x86_64:   llama-{version}-bin-win-avx2-x64.zip
+      win-arm64:    llama-{version}-bin-win-arm64.zip
+
+  - name: whisper-cpp
+    dest: vendor/runtimes/whisper-cpp
+    optional: true
+    source: github://ggerganov/whisper.cpp
+    matrix:
+      linux-x86_64: whisper-cpp-{version}-Linux-x86_64.tar.gz
+      linux-arm64:  whisper-cpp-{version}-Linux-aarch64.tar.gz
+      mac-x86_64:   whisper-cpp-{version}-macOS-x86_64.tar.gz
+      mac-arm64:    whisper-cpp-{version}-macOS-arm64.tar.gz
+      win-x86_64:   whisper-cpp-{version}-Win-x86_64.zip
+      win-arm64:    whisper-cpp-{version}-Win-x86_64.zip
+
+  - name: piper
+    dest: vendor/runtimes/piper
+    optional: true
+    source: github://rhasspy/piper
+    matrix:
+      linux-x86_64: piper_linux_x86_64.tar.gz
+      linux-arm64:  piper_linux_aarch64.tar.gz
+      mac-x86_64:   piper_macos_x64.tar.gz
+      mac-arm64:    piper_macos_aarch64.tar.gz
+      win-x86_64:   piper_windows_amd64.zip
+      win-arm64:    piper_windows_amd64.zip
+
+# ────────────────────────────────────────────────────────────────────
+# §4 基础模型（嵌入到 lite/standard/pro 安装包内）
+#     注意：模型 dest 用 ``Org--Model`` 写法，与 chayuan-identify 规则对齐。
+# ────────────────────────────────────────────────────────────────────
+models:
+  - name: qwen3-4b-chat-gguf
+    repo: unsloth/Qwen3-4B-Instruct-2507-GGUF
+    file: Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+    dest: models/chat/unsloth--Qwen3-4B-Instruct-2507-GGUF
+    source: hf-mirror://unsloth/Qwen3-4B-Instruct-2507-GGUF
+    release: [lite, standard, pro]
+    # 2026-05-14 实测：
+    # - Qwen/Qwen3-4B-Instruct-GGUF API 返 401(不存在 / gated)；
+    # - unsloth/Qwen3-4B-Instruct-2507-GGUF 单文件 2.33 GB,HEAD 200。
+    note: 默认对话模型(Qwen3-4B Instruct 2507 Q4_K_M,2.33 GB)；中文/工具调用强；建议 8GB+ 内存
+
+  # embedding / rerank 必须是 GGUF 单文件 —— 运行时引擎是 llama-server
+  # (--embedding / --reranking),只吃 GGUF;装 BAAI/* 的 safetensors 整仓
+  # sidecar 直接起不来(见 server/utils.py 的报错文案)。
+  - name: bge-m3
+    repo: gpustack/bge-m3-GGUF
+    file: bge-m3-Q5_K_M.gguf
+    dest: models/embedding/gpustack--bge-m3-GGUF
+    source: hf-mirror://gpustack/bge-m3-GGUF
+    release: [lite, standard, pro]
+    note: 默认 embedding(GGUF Q5_K_M,~468MB,llama-server --embedding 单文件加载)；中英多语言 + 长上下文(8K)
+
+  - name: bge-reranker-v2-m3
+    repo: gpustack/bge-reranker-v2-m3-GGUF
+    file: bge-reranker-v2-m3-Q4_K_M.gguf
+    dest: models/rerank/gpustack--bge-reranker-v2-m3-GGUF
+    source: hf-mirror://gpustack/bge-reranker-v2-m3-GGUF
+    release: [lite, standard, pro]
+    note: 默认 reranker(GGUF Q4_K_M,~438MB,llama-server --reranking 单文件加载)；与 bge-m3 同家族
+
+  - name: whisper-tiny-cpp
+    repo: ggerganov/whisper.cpp
+    file: ggml-tiny.bin
+    dest: models/asr/whisper--tiny
+    source: hf-mirror://ggerganov/whisper.cpp
+    release: [lite, standard, pro]
+    note: 离线 ASR；~75MB；speed > 准确
+
+  - name: rapidocr-onnx
+    repo: SWHL/RapidOCR
+    dest: models/ocr/rapidocr--onnx
+    source: hf-mirror://SWHL/RapidOCR
+    release: [standard, pro]
+    note: PP-OCR 中文/英文 ONNX；~12MB
+
+  - name: bge-large-zh-v15
+    repo: BAAI/bge-large-zh-v1.5
+    dest: models/embedding/BAAI--bge-large-zh-v1.5
+    source: hf-mirror://BAAI/bge-large-zh-v1.5
+    release: [standard, pro]
+    note: 高精度中文 embedding，1.4GB(中文偏置场景备选)
+
+  - name: qwen25-7b-chat-gguf
+    # 2026-05-14 实测：
+    # - Qwen/Qwen3-7B-Instruct-GGUF API 返 401(不存在 / gated);
+    # - Qwen/Qwen2.5-7B-Instruct-GGUF 是 split 多分片(不便单文件 fetch);
+    # - bartowski/Qwen2.5-7B-Instruct-GGUF 单文件 4.36 GB,HEAD 200,作为 pro 默认。
+    repo: bartowski/Qwen2.5-7B-Instruct-GGUF
+    file: Qwen2.5-7B-Instruct-Q4_K_M.gguf
+    dest: models/chat/bartowski--Qwen2.5-7B-Instruct-GGUF
+    source: hf-mirror://bartowski/Qwen2.5-7B-Instruct-GGUF
+    release: [pro]
+    note: pro 包默认对话(Qwen2.5-7B Q4_K_M,4.36 GB)；建议 16GB+ 内存
+
+# ────────────────────────────────────────────────────────────────────
+# §5 Release 矩阵：定义"包多大、装哪些"
+# ────────────────────────────────────────────────────────────────────
+releases:
+  lite:
+    description: 单机轻量版；最小可跑通 chat / embedding / rerank / asr 四类能力
+    runtimes: [python312, ollama, piper]
+    services: []                 # 单机走 sqlite + milvus-lite，不带 PG/MinIO
+    inference: [piper]
+    models:
+      - qwen3-4b-chat-gguf
+      - bge-m3
+      - bge-reranker-v2-m3
+      - whisper-tiny-cpp
+
+  standard:
+    description: 服务器标准版；多用户 + RAG + 知识库
+    runtimes: [python312, jdk17, nodejs20, ollama, llama-cpp, whisper-cpp, piper]
+    services: [postgres16, redis74, minio]
+    inference: [llama-cpp, whisper-cpp, piper]
+    models:
+      - qwen3-4b-chat-gguf
+      - bge-m3
+      - bge-reranker-v2-m3
+      - whisper-tiny-cpp
+      - rapidocr-onnx
+      - bge-large-zh-v15
+
+  pro:
+    description: 企业全功能版；T2I + T2V + 集群可达
+    runtimes: [python312, jdk17, nodejs20, ollama, llama-cpp, whisper-cpp, piper]
+    services: [postgres16, redis74, minio, milvus, elasticsearch, docker-compose]
+    inference: [llama-cpp, whisper-cpp, piper]
+    models:
+      - qwen3-4b-chat-gguf
+      - qwen25-7b-chat-gguf      # 2026-05-14:旧名 qwen3-7b-chat-gguf 引用的官方 GGUF 不存在,改用 bartowski 镜像下的 Qwen2.5-7B-Instruct
+      - bge-m3
+      - bge-large-zh-v15
+      - bge-reranker-v2-m3
+      - whisper-tiny-cpp
+      - rapidocr-onnx

@@ -1,0 +1,37 @@
+{
+  "name": "@chayuan/platform-tauri",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --emitDeclarationOnly",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@chayuan/platform-shared": "workspace:*",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-clipboard-manager": "^2.2.1",
+    "@tauri-apps/plugin-dialog": "^2.2.0",
+    "@tauri-apps/plugin-fs": "^2.2.0",
+    "@tauri-apps/plugin-global-shortcut": "^2.2.0",
+    "@tauri-apps/plugin-http": "^2.2.0",
+    "@tauri-apps/plugin-notification": "^2.2.1",
+    "@tauri-apps/plugin-os": "^2.2.0",
+    "@tauri-apps/plugin-shell": "^2.2.0",
+    "@tauri-apps/plugin-sql": "^2.2.0",
+    "@tauri-apps/plugin-stronghold": "^2.2.0",
+    "@tauri-apps/plugin-updater": "^2.3.0",
+    "@tauri-apps/plugin-window-state": "^2.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,95 @@
+# Profile: server
+#
+# Goal: one box / a few boxes, dozens-to-hundreds concurrent, GPU optional.
+# Bare-metal install OR docker-compose; the YAML is the same — only the
+# launcher (systemd vs `compose up`) differs.
+#
+# Apply:   chayuan profile use server
+# Inspect: chayuan profile show
+
+profile: server
+
+# ---- Storage ---------------------------------------------------------------
+storage:
+  driver: minio                     # local | minio | s3
+  minio:
+    endpoint: ""                    # empty -> supervisor brings up local MinIO subprocess
+    bucket: chayuan
+    region: cn-local
+    secure: false
+    user_env: MINIO_ROOT_USER       # auto-generated, persisted to runtime.json
+    password_env: MINIO_ROOT_PASSWORD
+
+database:
+  driver: postgres                  # sqlite | postgres
+  dsn_env: PG_DSN                   # supervisor synthesizes from runtime.json
+  pool_size: 20
+  echo: false
+
+vectorstore:
+  driver: milvus_standalone
+  endpoint_env: MILVUS_ENDPOINT     # supervisor sets to 127.0.0.1:${MILVUS_PORT}
+
+# ---- Auth ------------------------------------------------------------------
+auth:
+  mode: api_key                     # single_user | api_key | jwt
+  api_keys: []                      # populated via `chayuan auth add-key`
+
+# ---- Subprocess topology ---------------------------------------------------
+processes:
+  enabled:
+    - postgres
+    - redis
+    - minio
+    - milvus
+    - ollama
+    - vllm                          # GPU primary
+    - infinity
+    - comfyui
+    - funasr
+    - cosyvoice
+    - piper
+    - rapidocr
+    - paddleocr
+    - discovery
+    - gateway
+  disabled:
+    - llamacpp                      # GPU-only deployment skips CPU fallback
+
+# ---- Companions ------------------------------------------------------------
+companions:
+  onlyoffice:
+    enabled: true                   # Office preview is a hard requirement here
+    image: onlyoffice/documentserver:8.2
+    port: 38389
+    docker_required: true
+    jwt_secret_env: ONLYOFFICE_JWT_SECRET
+    fallback: none                  # server must have docker; preflight will FAIL build if missing
+  milvus_standalone:
+    enabled: true
+
+# ---- Local probing ---------------------------------------------------------
+local_service_probe:
+  enabled: true
+  ask_user: false                   # ops won't sit in front of a UI; just record
+  candidates:
+    - postgres
+    - redis
+    - minio
+    - milvus
+    - ollama
+    - docker
+    - onlyoffice
+
+# ---- Networking ------------------------------------------------------------
+gateway:
+  host: 0.0.0.0
+  port: 38080
+  cors_origins: ["*"]
+  rate_limit_qpm: 6000
+
+# ---- Telemetry / observability --------------------------------------------
+telemetry:
+  enabled: true
+  prometheus_path: /metrics
+  otlp_endpoint_env: OTEL_EXPORTER_OTLP_ENDPOINT

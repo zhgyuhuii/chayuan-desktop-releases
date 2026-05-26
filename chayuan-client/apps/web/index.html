@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>察元 AI</title>
+    <!--
+      CSP 总览:
+      - 默认收紧到 'self',让大部分资源走同源。
+      - OnlyOffice DocumentServer 集成需要松绑下面这几条:
+          script-src(-elem)  api.js 跨域加载
+          frame-src           DocEditor 内部 iframe(实际编辑器渲染层)
+          connect-src + ws    DocsAPI 调 REST + WebSocket 协作通道
+          style-src / font-src / img-src
+                              DS 注入的 CSS / 字体 / 图标
+          worker-src          编辑器内的 Web Worker
+        放开范围只到 ``localhost:* / 127.0.0.1:* / host.docker.internal:*`` —
+        覆盖三种常见部署:本机直跑 / Docker bridge / Docker Desktop。
+        生产部署若把 DS 挂到自有域名,需要 nginx 配 CSP 响应头单独加白(见
+        chayuan-server/docker/prod/nginx.conf)。
+      - 保留 ``https:`` 让生产 https DS 直接通过(同源策略仍兜底)。
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval'
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          https:;
+        script-src-elem 'self' 'unsafe-inline'
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          https:;
+        style-src 'self' 'unsafe-inline'
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          https:;
+        style-src-elem 'self' 'unsafe-inline'
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          https:;
+        img-src 'self' data: blob:
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          https:;
+        font-src 'self' data:
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          https:;
+        connect-src 'self'
+          http://127.0.0.1:62581 http://127.0.0.1:3000
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          ws://localhost:* ws://127.0.0.1:* ws://host.docker.internal:* ws://43.110.110.15:*
+          wss: https:;
+        frame-src 'self'
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*
+          https:;
+        worker-src 'self' blob:
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*;
+        media-src 'self' blob:
+          http://localhost:* http://127.0.0.1:* http://host.docker.internal:* http://43.110.110.15:*;
+      "
+    />
+    <!-- 启动 splash:与 apps/desktop/index.html 同形,详见那里注释。 -->
+    <style>
+      /* 只在 html 上声明 splash 期间的深色背景;body 不写 color/background,
+         避免 inline 样式压过 Tailwind @layer base,导致浅色主题下输入框
+         文字色继承 #e2e8f0 而灰白看不清。 */
+      html {
+        background: #0f172a;
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+          "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      #app { height: 100vh; width: 100vw; }
+      #chayuan-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483646;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background:
+          radial-gradient(ellipse at center,
+            rgba(99,102,241,0.20), rgba(14,165,233,0.10) 45%, transparent 70%),
+          #0f172a;
+        opacity: 1;
+        transition: opacity 360ms ease-out;
+      }
+      #chayuan-splash.cy-splash-fading { opacity: 0; pointer-events: none; }
+      #chayuan-splash * { box-sizing: border-box; }
+      .cy-splash-ring {
+        position: absolute;
+        width: 132px; height: 132px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, #6366f1, #06b6d4, #ec4899, #f59e0b, #6366f1);
+        animation: cy-splash-spin 2.4s linear infinite;
+        filter: blur(0.5px);
+        -webkit-mask: radial-gradient(circle, transparent 56px, black 58px, black 64px, transparent 66px);
+                mask: radial-gradient(circle, transparent 56px, black 58px, black 64px, transparent 66px);
+      }
+      .cy-splash-orbits { position: absolute; animation: cy-splash-spin-rev 3.8s linear infinite; }
+      .cy-splash-orbit { position: absolute; display: block; border-radius: 50%; }
+      .cy-splash-o1 {
+        width: 10px; height: 10px; background: #6366f1;
+        box-shadow: 0 0 12px #6366f1, 0 0 22px rgba(99,102,241,0.55);
+        animation: cy-splash-orbit-1 2.2s linear infinite;
+      }
+      .cy-splash-o2 {
+        width: 8px; height: 8px; background: #06b6d4;
+        box-shadow: 0 0 10px #06b6d4, 0 0 20px rgba(6,182,212,0.55);
+        animation: cy-splash-orbit-2 2.8s linear infinite;
+      }
+      .cy-splash-o3 {
+        width: 7px; height: 7px; background: #ec4899;
+        box-shadow: 0 0 10px #ec4899, 0 0 20px rgba(236,72,153,0.55);
+        animation: cy-splash-orbit-3 3.4s linear infinite;
+      }
+      .cy-splash-core {
+        position: relative;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #a5b4fc, #6366f1 60%, #4338ca);
+        box-shadow: 0 0 24px rgba(99,102,241,0.55), inset 0 0 12px rgba(255,255,255,0.35);
+        animation: cy-splash-pulse 1.6s ease-in-out infinite;
+      }
+      .cy-splash-shimmer {
+        position: absolute; top: 0; bottom: 0; width: 60%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+        animation: cy-splash-shimmer 1.8s ease-in-out infinite;
+        filter: blur(2px);
+      }
+      .cy-splash-tag {
+        position: absolute;
+        bottom: 8vh; left: 0; right: 0;
+        text-align: center;
+        font-size: 13px; font-weight: 500; line-height: 1.6;
+        color: rgba(226,232,240,0.85);
+        letter-spacing: 0.06em;
+      }
+      .cy-splash-tag-sub { margin-top: 6px; font-size: 11px; color: rgba(148,163,184,0.85); }
+      @keyframes cy-splash-spin     { to { transform: rotate(360deg); } }
+      @keyframes cy-splash-spin-rev { to { transform: rotate(-360deg); } }
+      @keyframes cy-splash-pulse {
+        0%,100% { transform: scale(1);    opacity: .85; }
+        50%     { transform: scale(1.18); opacity: 1; }
+      }
+      @keyframes cy-splash-orbit-1 {
+        from { transform: rotate(0deg)   translateX(28px) rotate(0deg); }
+        to   { transform: rotate(360deg) translateX(28px) rotate(-360deg); }
+      }
+      @keyframes cy-splash-orbit-2 {
+        from { transform: rotate(120deg) translateX(40px) rotate(-120deg); }
+        to   { transform: rotate(480deg) translateX(40px) rotate(-480deg); }
+      }
+      @keyframes cy-splash-orbit-3 {
+        from { transform: rotate(240deg) translateX(34px) rotate(-240deg); }
+        to   { transform: rotate(600deg) translateX(34px) rotate(-600deg); }
+      }
+      @keyframes cy-splash-shimmer {
+        0%   { transform: translateX(-120%); }
+        100% { transform: translateX( 120%); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- splash 放在 #app 之前 —— 浏览器增量绘制首帧就是动画,无空白瞬态 -->
+    <div id="chayuan-splash" aria-busy="true" aria-live="polite">
+      <div class="cy-splash-ring"></div>
+      <div class="cy-splash-orbits">
+        <span class="cy-splash-orbit cy-splash-o1"></span>
+        <span class="cy-splash-orbit cy-splash-o2"></span>
+        <span class="cy-splash-orbit cy-splash-o3"></span>
+      </div>
+      <div class="cy-splash-core">
+        <span class="cy-splash-shimmer"></span>
+      </div>
+      <div class="cy-splash-tag">
+        察元 AI
+        <div class="cy-splash-tag-sub">正在加载…</div>
+      </div>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

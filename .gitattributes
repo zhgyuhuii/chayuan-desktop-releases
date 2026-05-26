@@ -1,0 +1,50 @@
+# 行尾约定 ── 让 Windows / macOS / Linux 同事 clone 后行尾一致,避免诡异
+# "bad interpreter" / "command not found" / PowerShell 中文乱码。
+
+# Shell 脚本 / Makefile / 其它 *nix-only 文件:LF
+*.sh        text eol=lf
+*.bash      text eol=lf
+Makefile    text eol=lf
+*.mk        text eol=lf
+
+# Windows 脚本:CRLF
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+
+# 通用文本:默认 LF(git 自动转换)
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.json      text eol=lf
+*.toml      text eol=lf
+*.py        text eol=lf
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.rs        text eol=lf
+*.go        text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+
+# 二进制 — 不做 EOL 转换
+*.png       binary
+*.jpg       binary
+*.gif       binary
+*.ico       binary
+*.exe       binary
+*.dll       binary
+*.so        binary
+*.so.*      binary
+*.dylib     binary
+*.zip       binary
+*.tar.gz    binary
+*.gguf      binary
+*.metal     binary
+*.bin       binary
+*.pdf       binary
+
+# vendor binary 平台子目录 — 防 EOL 自动转换砸碎 binary
+chayuan-server/vendor/services/** binary

@@ -1,0 +1,415 @@
+[tool.poetry]
+name = "chayuan-server"
+# 版本号单一来源（SSOT）：repo 根 VERSION 文件。
+# 改版本要么 ① 跑 scripts/bump-version.py 自动 +1 + 同步 tauri/pyproject,
+# 要么 ② 跑 scripts/bump-version.py --set X.Y.Z 改成显式值。
+# 不要手动改这一行——build-desktop.{sh,ps1} 启动时会自动跑 bump,会被覆盖。
+version = "1.0.0"
+description = "察元AI助手服务（chayuan-server）：基于 LangChain 的本地知识库与 Agent 对话服务。"
+authors = ["北京智灵鸟科技中心"]
+packages = [
+    {include = "chayuan"},
+    {include = "langchain_chayuan"}
+]
+
+[tool.poetry.scripts]
+chayuan = "chayuan.cli:main"
+# P3 CLI：chachat 终端对话客户端（device-code 登录 + 流式打印）
+chachat = "chayuan.tools.cli.chachat:main"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13,!=3.9.7"
+# LangChain 1.x：与 2026-04 PyPI 最新稳定版对齐；`poetry update langchain-core langchain langchain-openai ...` 可拉到约束内最新
+# 版本矩阵（2026-04）: core 1.3.0 / classic 1.0.3 / openai 1.1.14 / community 0.4.1 / experimental 0.4.1 / ollama 1.1.0
+# NOTE: langchain-openai 1.x 与 0.x 是 breaking major；曾经的 0.3.x 约束会把 ChatOpenAI 锁成 core 0.x 兼容层，与其他 1.x 包互掐
+langchain = ">=1.2.15,<2.0.0"
+langchain-classic = ">=1.0.3,<2.0.0"
+langchainhub = ">=0.1.14,<0.2.0"
+langchain-community = ">=0.4.1,<1.0.0"
+langchain-core = ">=1.3.0,<2.0.0"
+langchain-openai = ">=1.1.14,<2.0.0"
+langchain-experimental = ">=0.4.1,<1.0.0"
+langchain-text-splitters = ">=1.0.0,<2.0.0"
+# OllamaEmbeddings 在 langchain-community 1.x 之后已弃用：显式迁到独立包 langchain-ollama
+langchain-ollama = ">=1.1.0,<2.0.0"
+# openai / tiktoken 是 langchain-openai 1.1.x 的强依赖底线；由 resolver 自行拉新版
+openai = ">=2.26.0,<3.0.0"
+tiktoken = ">=0.7.0,<1.0.0"
+# Phase 4 单机版本地向量库:嵌入式 KNN + metadata filter,纯 C 扩展、单文件、与
+# 业务 SQLite 同库共存。详见 ``chayuan/server/retrieval/vector_store_local.py``。
+sqlite-vec = ">=0.1.6,<0.2.0"
+async-timeout = ">=4.0.0,<5.0.0"
+humanlayer= "0.7.6"
+nest_asyncio = "1.6.0"
+mcp = ">=1.4.1,<1.5"
+fastapi = "~0.109.2"
+sse_starlette = "~1.8.2"
+nltk = "~3.8.1"
+uvicorn = ">=0.27.0.post1"
+unstructured = "~0.11.0"
+python-magic-bin = {version = "*", platform = "win32"}
+SQLAlchemy = "~2.0.25"
+faiss-cpu = ">=1.8.0,<2.0.0"
+jieba = "0.42.1"
+rank_bm25 = "0.2.2"
+openpyxl = "3.1.4"
+networkx = "3.1"
+opencv-python = "~4.10.0.84"
+PyMuPDF = "~1.23.16"
+rapidocr_onnxruntime = "~1.3.8"
+# 单机版 v0:删 paddleocr / paddlepaddle(占 1.2 GB,且 Windows 无现成 wheel,
+# 解析阶段就死)。OCR 走已有的 rapidocr_onnxruntime(纯 ONNX,CPU,~70 MB)。
+# Phase 5 整体瘦身后再考虑通过 optional extra 把 paddle 加回多用户/服务端形态。
+# - piper-tts:轻量 CPU TTS(~30 MB),内置中文音色,即装即用
+piper-tts = ">=1.2,<2.0"
+# 跨平台 ffmpeg static binary(~30 MB),pip install 时下载对应平台 wheel。
+# 用途:ASR 路径把浏览器 MediaRecorder 录的 webm/opus 转 16kHz mono wav 喂
+# whisper.cpp(它某些 build 不解 webm),也给 video.py 抽帧/抽音兜底。免去
+# 用户自己装系统 ffmpeg。代码层用 imageio_ffmpeg.get_ffmpeg_exe() 拿绝对路径。
+imageio-ffmpeg = ">=0.4,<1.0"
+# 纯 Python 繁简转换(~280 KB),用在 ASR 路径里把 whisper.cpp 默认输出的繁体
+# 中文统一转简体 — 用户主诉求是简体笔记。无 native deps,跨平台稳。
+zhconv = ">=1.4,<2.0"
+# 单机版本地 embedding (chayuan/server/embeddings/onnx_local.py):
+# rapidocr_onnxruntime 已经把 onnxruntime 拉进来,但版本约束在 1.x 后期/2.x;
+# 显式钉 >=1.16 保证有稳定的 ORT_ENABLE_ALL graph optimization。
+onnxruntime = ">=1.16,<2.0"
+# tokenizers 是 HuggingFace 风格 fast tokenizer,纯 Rust,跨平台 wheel 全。
+# bge-m3 / e5 / gte 系列 ONNX 模型都自带 tokenizer.json,本地 embedding 直接用。
+tokenizers = ">=0.15,<1.0"
+requests = "~2.32.3"
+# requests 2.32 在 import 时若检测到 chardet，则要求 3.0.2<=chardet<6；Anaconda 常带 chardet 7.x 会触发 RequestsDependencyWarning
+chardet = ">=3.0.2,<6.0.0"
+# (移除 pathlib = "~1.0.1":Python 2 时代的 backport,与 stdlib pathlib 冲突,
+#  且 PyInstaller 6+ 拒绝跟它共存。Python 3 自带 pathlib,无需第三方包)
+pyjwt = "~2.8.0"
+elasticsearch = "*"
+numexpr = ">=1" #test
+strsimpy = ">=0.2.1"
+markdownify = ">=0.11.6"
+tqdm = ">=4.66.1"
+websockets = ">=12.0"
+numpy = ">=1.26,<2.0"
+pandas = ">=2.1,<2.3" # test
+pydantic = "~2.11.1"
+httpx = {version = "0.27.2", extras = ["brotli", "http2", "socks"]}
+python-multipart = "0.0.9"
+json_repair = ">=0.30.0"
+# webui
+# Streamlit 1.34.0 强制 protobuf<5，与 pymilvus 2.6.x 要求 protobuf>=5.27.2 冲突。
+# 1.36.0 起放开 protobuf 上限（PR #8627）允许 protobuf 5.x。
+# 这里给 1.36+ 浮动，不再钉死，由 poetry 求解最新兼容版（streamlit-* 全部
+# 只声明 streamlit>=1.26 这种下限，无上限阻断）。
+streamlit = ">=1.36,<2.0"
+streamlit-option-menu = "0.3.12"
+streamlit-antd-components = "0.3.1"
+streamlit-chatbox = "1.1.12.post4"
+streamlit-modal = "0.1.0"
+streamlit-aggrid = "1.0.5"
+streamlit-extras = "0.4.2"
+htbuilder = "0.6.2"
+xinference_client = { version = "^0.13.0", optional = true }
+zhipuai = { version = "^2.1.0", optional = true }
+# ---- T1/T2 工具可选依赖：按 extras 分组按需安装 ----
+# tools-finance / tools-academic / tools-code / tools-weather / tools-enterprise / tools-all
+# 这些包未安装时，对应工具会在运行时返回 "请 pip install XXX" 的友好错误，
+# 不影响 chayuan 主服务启动，也不影响其它工具使用。
+yfinance = { version = ">=0.2.0,<1.0.0", optional = true }
+semanticscholar = { version = ">=0.8.0,<1.0.0", optional = true }
+stackapi = { version = ">=0.3.0,<1.0.0", optional = true }
+PyGithub = { version = ">=2.1.0,<3.0.0", optional = true }
+python-gitlab = { version = ">=4.0.0,<6.0.0", optional = true }
+pyowm = { version = ">=3.3.0,<4.0.0", optional = true }
+atlassian-python-api = { version = ">=3.41.0,<5.0.0", optional = true }
+# ---- 知识源：额外 SQL 方言驱动（可选，按 extras 分组安装） ----
+# pyodbc: SQL Server（推荐，需系统装 ODBC Driver 18）
+# pymssql: SQL Server 纯 Python 备选
+# oracledb: Oracle 新驱动（取代 cx_Oracle，支持 Thin 模式）
+# clickhouse-sqlalchemy + clickhouse-driver: ClickHouse
+pyodbc = { version = ">=5.0,<6.0", optional = true }
+pymssql = { version = ">=2.2,<3.0", optional = true }
+oracledb = { version = ">=2.2,<4.0", optional = true }
+clickhouse-sqlalchemy = { version = ">=0.2.5,<1.0", optional = true }
+clickhouse-driver = { version = ">=0.2.7,<1.0", optional = true }
+# ---- RAG 质量增强（P0-1，56 题改为必装）----
+# sentence-transformers: BGE-Reranker-v2-m3 等 CrossEncoder 的运行时依赖
+# 用户已确认"基础环境必装清单"包括 RAG 必备 — embedding / rerank 默认可用,
+# 不再走 optional 让用户后续自己装。本包带 ~50MB 元数据,但 torch / transformers
+# 已是其他主依赖的 transitive,实际增量小。
+sentence-transformers = ">=3.0,<5.0"
+# ---- RAPTOR + GraphRAG（B 路线）----
+# scikit-learn: GMM 聚类；umap-learn: 降维（可选，不装走朴素 PCA）
+# networkx: GraphRAG 图结构 + Louvain 检测
+# python-louvain: 提供 community_louvain 算法
+# 以上除 scikit-learn 外均可选；build 能力按需启用
+# scikit-learn 不做 optional：装上去大小 < 50MB，值得（GMM 聚类也可能用于未来更多场景）
+# networkx 已在上方主依赖里；python-louvain / umap-learn 可选
+scikit-learn = ">=1.3,<2.0"
+python-louvain = { version = ">=0.16,<1.0", optional = true }
+umap-learn = { version = ">=0.5,<1.0", optional = true }
+# langchain-experimental 已是上方必装依赖（python_repl 开箱可用），不再重复声明为 optional
+pymysql = "^1.1.0"
+psycopg2-binary = "^2.9.9"
+# ---- 知识源（Knowledge Source）子系统 ----
+# sqlglot: SQL AST 解析 / 多方言校验（Text2SQL 只读守门员）
+# cryptography: 数据源密码 Fernet 加密落库
+# pymongo: MongoDB 驱动（NoSQL 知识源）
+# langgraph: Text2SQL StateGraph 编排（self-correct / retry / 可观测）
+# langchain 1.2.x 约束 langgraph 为 1.1.x（与 0.x API 不兼容，勿放宽到 <1.0）
+sqlglot = ">=25.0,<27.0"
+cryptography = ">=42.0,<46.0"
+pymongo = ">=4.6,<5.0"
+langgraph = ">=1.1.5,<1.2.0"
+memoization = "0.4.0"
+pydantic_settings = ">=2.3.4"
+ruamel_yaml = "0.18.6"
+loguru = "^0.7.2"
+streamlit-paste-button = "0.1.2"
+python-docx = "1.1.2"
+# 与 docker/dev-stack 中 milvusdb/milvus:v2.6.15 服务端对齐；2.6.x 客户端不向下兼容 2.4 server。
+# 升级流程：见 docker-compose.yml 内 milvus 服务上方注释（dev-stack 直接清卷重建）。
+pymilvus = ">=2.6,<2.7"
+# langchain-milvus 是 LangChain 1.x 推荐的独立包（取代 langchain_community.vectorstores.Milvus）。
+# 0.3+ 内部走 MilvusClient(uri=...)，与 Milvus 2.6 / pymilvus 2.6 协议一致。
+langchain-milvus = ">=0.3,<0.4"
+setuptools = "<81"
+# 配置面板（NiceGUI，chayuan start -c）
+# 使用 1.4.x 系列以兼容 fastapi ~0.109.2；升级 NiceGUI 2.x 前需先放宽 fastapi 约束
+nicegui = ">=1.4.20,<2.0"
+# 共享状态 / 限流 / 语义缓存 / 异步入库队列：Redis 同步 + 异步客户端
+# 5.x 起 redis-py 内置 asyncio 子包（redis.asyncio），与 arq 0.25+ 兼容
+redis = ">=5.0,<6.0"
+# 异步入库队列 worker（chayuan worker / INGEST_ASYNC_ENABLED=true 时必须）
+arq = ">=0.25,<0.27"
+# ---- 异步驱动（可选）：extras ks-async / ks-async-pro ----
+asyncpg = { version = ">=0.29,<1.0", optional = true }
+asyncmy = { version = ">=0.2.9,<1.0", optional = true }
+aiosqlite = { version = ">=0.19,<1.0", optional = true }
+motor = { version = ">=3.3,<4.0", optional = true }
+aioodbc = { version = ">=0.5,<1.0", optional = true }
+asynch = { version = ">=0.2.3,<1.0", optional = true }
+# ---- RAG 可选依赖：extras rag-colbert / rag-colpali / eval ----
+ragatouille = { version = ">=0.0.8,<1.0", optional = true }
+colpali-engine = { version = ">=0.3,<1.0", optional = true }
+pdf2image = { version = ">=1.17,<2.0", optional = true }
+ragas = { version = ">=0.2,<1.0", optional = true }
+datasets = { version = ">=2.17,<4.0", optional = true }
+# ---- 统一文件存储：MinIO（extra storage-minio）----
+minio = { version = ">=7.2,<8.0", optional = true }
+# ---- 图像知识源（extra image）----
+Pillow = { version = ">=10.0,<12.0", optional = true }
+# 图像向量化(image-embedding / CLIP)已下线,torch / transformers 全家桶
+# 不再需要 —— 注销 optional 声明,避免开发环境 `-E image` 误装。
+# 要恢复图像功能:取消下面两行的注释,并把 PyInstaller spec 的 LITE_BUILD
+# 强制 True 改回读 env,以及 server_app / local_runtime_registry 等处的注销恢复。
+# torch = { version = ">=2.1,<3.0", optional = true }
+# transformers = { version = ">=4.45,<5.0", optional = true }
+# huggingface_hub:install_job 在线下载 bundled_models(lite/standard/pro)必需,
+# 桌面端 sidecar 也要靠它,因此必装,不再 optional。
+huggingface_hub = ">=0.24,<1.0"
+# modelscope:本地模型服务 UI 行内"下载模型"入口的真实下载源(国内稳定),
+# install_model.py 用它的 snapshot_download / file_download 拉指定 model_id。
+# 跟 hf 一样必装,前端 source dropdown 默认就是 modelscope。
+modelscope = ">=1.18,<2.0"
+
+[tool.poetry.extras]
+xinference = ["xinference_client"]
+zhipuai = ["zhipuai"]
+# 与 pip extras 名称对齐；实际包为 langchain-ollama（已在主依赖中必装）
+ollama = ["langchain-ollama"]
+
+# ---- T1/T2 工具可选依赖分组 ----
+# 例：poetry install -E tools-all        → 一键装齐全部工具可选依赖
+#     poetry install -E tools-code       → 只装 GitHub / GitLab / StackExchange / Python REPL 所需
+#     poetry install -E tools-finance    → 只装 Yahoo 财经
+tools-finance = ["yfinance"]
+tools-academic = ["semanticscholar"]
+tools-weather = ["pyowm"]
+tools-code = ["PyGithub", "python-gitlab", "stackapi"]
+tools-enterprise = ["atlassian-python-api"]
+tools-all = [
+    "yfinance",
+    "semanticscholar",
+    "pyowm",
+    "PyGithub",
+    "python-gitlab",
+    "stackapi",
+    "atlassian-python-api",
+]
+
+# ---- 知识源 SQL 方言 extras ----
+# pip install "chayuan-server[ks-mssql]" / [ks-oracle] / [ks-clickhouse] / [ks-all]
+ks-mssql = ["pyodbc", "pymssql"]
+ks-oracle = ["oracledb"]
+ks-clickhouse = ["clickhouse-sqlalchemy", "clickhouse-driver"]
+ks-all = [
+    "pyodbc",
+    "pymssql",
+    "oracledb",
+    "clickhouse-sqlalchemy",
+    "clickhouse-driver",
+]
+
+# ---- 异步驱动 extras（AsyncSqlConnector / AsyncMongoConnector / AsyncEsConnector）----
+# pip install "chayuan-server[ks-async]" 装齐核心四家（MySQL/PG/SQLite/Mongo）
+# pip install "chayuan-server[ks-async-pro]" 再加上 Oracle/MSSQL/ClickHouse
+ks-async = ["asyncpg", "asyncmy", "aiosqlite", "motor"]
+ks-async-pro = [
+    "asyncpg", "asyncmy", "aiosqlite", "motor",
+    "aioodbc", "asynch", "oracledb",
+]
+
+# ---- RAG 质量增强 extras ----
+# 56 题:sentence-transformers 已改必装(主依赖),rag-pro 现在是空 metapackage
+# 保留 extras 名字避免 ``pip install "chayuan-server[rag-pro]"`` 报错
+rag-pro = []
+# RAPTOR + GraphRAG 全家桶
+rag-graph = ["python-louvain", "umap-learn"]
+# N-1 ColBERT：RAGatouille 带来 ColBERT v2 预训练
+rag-colbert = ["ragatouille"]
+# N-11 ColPali：多模态（相当重）
+rag-colpali = ["colpali-engine", "pdf2image"]
+# N-5 RAGAS 评估
+eval = ["ragas", "datasets"]
+# N-8 MCP Server（独立暴露 MCP 工具）
+# mcp 已经作为主依赖（用于客户端）
+# 新增：nothing extra needed
+
+# ---- 统一文件存储：MinIO 后端 ----
+# 装了 minio-py 才能启用 FILE_STORAGE_BACKEND=minio；否则回退 local，零影响
+# pip install "chayuan-server[minio]"
+storage-minio = ["minio"]
+
+# ---- 图像知识源(已下线)----
+# 图像向量化能力已下线 —— extras 注销;若日后恢复,取消下行注释并把
+# 上方 torch / transformers 的 optional 声明也恢复。
+# image = ["Pillow", "torch", "transformers"]
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+# The only dependencies that should be added are
+# dependencies used for running tests (e.g., pytest, freezegun, response).
+# Any dependencies that do not meet that criteria will be removed.
+pytest = "^7.3.0"
+pytest-cov = "^4.0.0"
+pytest-dotenv = "^0.5.2"
+duckdb-engine = "^0.9.2"
+pytest-watcher = "^0.2.6"
+freezegun = "^1.2.2"
+responses = "^0.22.0"
+pytest-asyncio = "^0.23.2"
+lark = "^1.1.5"
+pytest-mock = "^3.10.0"
+pytest-socket = "^0.6.0"
+syrupy = "^4.0.2"
+requests-mock = "^1.11.0"
+# 知识源子系统测试依赖
+fakeredis = "^2.23"
+testcontainers = { version = "^4.7", extras = ["mysql", "postgres", "elasticsearch"] }
+
+
+[tool.poetry.group.lint]
+optional = true
+
+[tool.poetry.group.lint.dependencies]
+ruff = "^0.1.5"
+
+
+[tool.poetry.group.codespell]
+optional = true
+
+[tool.poetry.group.codespell.dependencies]
+codespell = "^2.2.0"
+
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+setuptools = "*"
+
+
+
+
+
+
+
+
+
+
+
+
+
+[[tool.poetry.source]]
+name = "group-pypi"
+# 内网 Nexus 示例: http://192.168.1.130:8081/repository/pypi_group/simple/
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "primary"
+
+[tool.ruff]
+exclude = [
+    "tests/examples/non-utf8-encoding.py",
+    "tests/integration_tests/examples/non-utf8-encoding.py",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle
+    "F",  # pyflakes
+    "I",  # isort
+    "T201", # print
+]
+
+[tool.mypy]
+ignore_missing_imports = "True"
+disallow_untyped_defs = "True"
+exclude = ["notebooks", "examples", "example_data"]
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0", "poetry-plugin-pypi-mirror==0.4.2"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+# --strict-markers will raise errors on unknown marks.
+# https://docs.pytest.org/en/7.1.x/how-to/mark.html#raising-errors-on-unknown-marks
+#
+# https://docs.pytest.org/en/7.1.x/reference/reference.html
+# --strict-config       any warnings encountered while parsing the `pytest`
+#                       section of the configuration file raise errors.
+#
+# https://github.com/tophat/syrupy
+# --snapshot-warn-unused    Prints a warning on unused snapshots rather than fail the test suite.
+addopts = "--strict-markers --strict-config --durations=5 --snapshot-warn-unused -svv"
+# Registering custom markers.
+# https://docs.pytest.org/en/7.1.x/example/markers.html#registering-markers
+markers = [
+    "requires: mark tests as requiring a specific library",
+    "scheduled: mark tests to run in scheduled testing",
+    "compile: mark placeholder test used to compile integration tests without running them"
+]
+asyncio_mode = "auto"
+
+
+[tool.codespell]
+skip = '.git,*.pdf,*.svg,*.pdf,*.yaml,*.ipynb,poetry.lock,*.min.js,*.css,package-lock.json,example_data,_dist,examples,*.trig,*.json,*.md,*.html,*.txt,*.csv'
+# Ignore latin etc
+ignore-regex = '.*(Stati Uniti|Tense=Pres).*'
+# whats is a typo but used frequently in queries so kept as is
+# aapply - async apply
+# unsecure - typo but part of API, decided to not bother for now
+ignore-words-list = 'momento,collison,ned,foor,reworkd,parth,whats,aapply,mysogyny,unsecure,damon,crate,aadd,symbl,precesses,accademia,nin'
+
+[tool.poetry.plugins.dotenv]
+ignore = "false"
+dotenv = "dotenv:plugin"
+
+
+# https://python-poetry.org/docs/repositories/

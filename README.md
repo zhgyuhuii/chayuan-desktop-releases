@@ -65,6 +65,8 @@
   - [8.12 引用展示与原文回链](#812-引用展示与原文回链)
 - [九、HTTP API 接口总览](#九http-api-接口总览)
 - [十、开发者搭建指南](#十开发者搭建指南)
+  - [10.4 本地打包(Windows / macOS / Linux 命令)](#104-本地打包默认双产物轻量版--集成版)
+  - [10.8 装完后诊断与故障排查](#108-装完后诊断与故障排查) ⭐ services 目录空 / 服务起不来必读
 - [十一、使用教程入口](#十一使用教程入口)
 - [十二、安全 · 隐私 · 离线](#十二安全--隐私--离线)
 - [十三、路线图](#十三路线图)
@@ -962,28 +964,92 @@ pnpm install
 pnpm dev:desktop
 ```
 
-### 10.3 模型放置与下载
+### 10.3 模型与服务下载
 
-> 模型相关的"下载地址 / 格式 / 放在哪 / 打包嵌入 / 调试自检"等完整指南,
-> 见 **[chayuan-server/vendor/bundled_models/README.md](chayuan-server/vendor/bundled_models/README.md)**。
+下载有**两条路径,目标目录不同,别混**:
 
-短版速记:
+| 场景 | 工具 | 落点 |
+|---|---|---|
+| 应用内下载(终端用户) | 应用里的「下载模型」对话框 | `<CHAYUAN_ROOT>/models/bundled/<cap>/` |
+| 打包前备料(开发者) | `scripts/install-vendor.*` | `chayuan-server/vendor/` |
+
+`<CHAYUAN_ROOT>` 默认:Windows `%APPDATA%\chayuan`、macOS `~/Library/Application Support/chayuan`、Linux `~/.local/share/chayuan`。
+
+#### A. 应用内下载模型(终端用户用)
+
+打开应用 → 模型广场 / 设置里的「下载模型」对话框:
+
+- 粘贴 `model_id`(形如 `owner/name`),选下载源:**ModelScope(国内快)** 或 HuggingFace(走 hf-mirror)
+- 重排模型已预填 5 个候选(bge-reranker-v2-m3 / gte-multilingual-reranker-base / jina-reranker-v2 / bge-reranker-base / ms-marco-MiniLM),点示例一键填好
+- 下载落到 `<CHAYUAN_ROOT>/models/bundled/<cap>/<model>/`,下完自动扫描挂载
+- 也可手动把模型文件放进该目录,再点「扫描挂载」。**一个模型一个子文件夹**,多个子文件夹会全部加载
+
+#### B. 打包前下载 vendor 资源(开发者 / 打包用)
+
+一站式脚本,把打全量包要塞进 `vendor/` 的东西一次装齐:
+
+```powershell
+# Windows
+.\scripts\install-vendor.ps1 -Flavor full
+```
+```bash
+# Linux / macOS
+bash scripts/install-vendor.sh --flavor full
+```
+
+下三类资源到 `chayuan-server/vendor/`:
+
+| 资源 | 落点 | 说明 |
+|---|---|---|
+| 模型 | `vendor/bundled_models/<cap>/` | 平台无关,一次全平台通用 |
+| 服务二进制 | `vendor/services/<engine>/<platform>/` | llama-server / whisper-server |
+| torch wheels | `vendor/torch_wheels/<platform_py>/` | 离线装 torch 兜底 |
+
+**墙内网络**:
+
+- `github.com` 不通时,脚本**自动探测可用镜像**(内置 `gh-proxy.com` / `ghfast.top`);也可手动指定:
+  `.\install-vendor.ps1 -GithubMirror https://gh-proxy.com/` / `--github-mirror https://gh-proxy.com/`
+- 模型走国内源:加 `-Source modelscope` / `--source modelscope`
+- 注:老的 `ghproxy.com` 已废弃,用 `gh-proxy.com` 或 `ghfast.top`
+
+**多平台 llama-server**:`install-vendor.ps1` 默认下全 5 个平台
+
+```powershell
+.\scripts\install-vendor.ps1 -Flavor full -Targets win-x64,win-arm64,linux-x64,macos-x64,macos-arm64
+```
+
+whisper-server 没有预编译,只能在目标机上 brew/docker/源码编译 —— 非本机平台需到对应机器跑 `install-whisper-server.sh`;llama-server 的 `linux-arm64` upstream 没发 zip,同样需自行处理。
+
+**单独装某一项**:
 
 ```bash
-# 自带模型固定放在 chayuan-server/vendor/bundled_models/<capability>/ 下
-# 子目录:chat / embedding / rerank / asr / ocr / image / custom
-# 单文件:*.gguf | *.onnx | *.safetensors;多文件仓库:带 config.json/tokenizer.json 的目录
+# 只装模型(--lite 瘦身集 / 不带 = 全量;--only 单 cap)
+python scripts/install-bundled-models.py --source modelscope --only chat
 
-# 体检本次能装上几个 capability 的模型
-python scripts/check-bundled-models.py
-python scripts/check-bundled-models.py --json    # 给 CI / 脚本消费
-python scripts/check-bundled-models.py --require chat --require embedding  # 强制项
+# 只装某平台的 llama-server
+.\scripts\install-llama-server.ps1 -Target win-arm64       # Windows
+bash scripts/install-llama-server.sh b9174 --target linux-x64   # Linux/macOS
 
-# 按 layout.yaml release 批量拉模型(集成版打包前必跑)
-cd chayuan-server
-python -m chayuan_packaging fetch --target linux --arch x86_64 --release standard
-python -m chayuan_packaging stage  --target linux --arch x86_64 --release standard
+# 只装 whisper-server(本机平台)
+.\scripts\install-whisper-server.ps1
+bash scripts/install-whisper-server.sh
 ```
+
+#### C. 校验
+
+```bash
+python scripts/check-bundled-models.py          # 模型完整性,能装上几类
+python scripts/check-bundled-models.py --json   # 给 CI / 脚本消费
+python scripts/check-services.py --target win-x64   # 服务二进制完整性
+
+# 排查"扫描挂载扫不到 / 服务起不来"(Windows)
+.\scripts\diagnose-models.ps1
+```
+
+> 模型"下载地址 / 格式 / 打包嵌入 / 调试自检"等更细的指南,
+> 见 **[chayuan-server/vendor/bundled_models/README.md](chayuan-server/vendor/bundled_models/README.md)**。
+> CI 三平台流水线按 layout.yaml release 批量拉模型,详见
+> **[PACKAGING.md](PACKAGING.md)**。
 
 ### 10.4 本地打包(默认双产物:轻量版 + 集成版)
 
@@ -1036,20 +1102,73 @@ dist-integrated/    ← 集成版 .dmg / .deb / .AppImage / .msi / .exe
 
 #### Windows
 
+打包入口固定是 `.\build-desktop.ps1`(或 `.\build-desktop.cmd`,内部转发到 ps1)。
+三类用例按需选:
+
+##### 用例 A:一次打 **lite + full** 双产物(完整发布)
+
 ```powershell
-# 默认 = 双产物
-.\build-desktop.cmd
-
-# 只打一种
-.\build-desktop.cmd -LiteOnly
-.\build-desktop.cmd -IntegratedOnly
-
-# 跳过部分阶段(后续小改重打)
-.\build-desktop.cmd -BundleOnly        # 仅重打 Tauri bundle
-.\build-desktop.cmd -SkipServer        # sidecar 不变,只重打前端
-.\build-desktop.cmd -SkipTypecheck     # 跳类型检查
-.\build-desktop.cmd -SkipModelCheck    # 跳模型体检
+# 完整双产物 — 第一次构建 / release 切版本前用,约 30 分钟
+.\build-desktop.ps1
 ```
+
+不传任何 `-LiteOnly` / `-FullOnly` 时,脚本会按 lite → full 顺序各跑一轮完整流程:
+PyInstaller sidecar 编译一次两个 flavor 复用,只有 Step 1b(`sync_bundled_models`)
+按 flavor 各做一次 — lite 只同步 LITE_CAPS(embedding/rerank/asr/ocr/tts),
+full 加上 chat/image。
+
+产物分别落 `dist-lite\` 和 `dist-full\`(均含 `.msi + cab*.cab + models_seed/`
++ 整包 ISO)。
+
+##### 用例 B:只打 **lite** 或只打 **full**(本机迭代 / 单端发布)
+
+```powershell
+# 只出轻量版 — 本机试用首选,约 5-10 分钟
+.\build-desktop.ps1 -LiteOnly
+
+# 只出全量版 — 集成版发布前验证用
+.\build-desktop.ps1 -FullOnly
+```
+
+> `-FullOnly` 的旧名 `-IntegratedOnly` 仍可用,会打 deprecation hint,建议改新名。
+
+##### 用例 C:**分段打包**(迭代时复用上次产物,省 80-90% 时间)
+
+按"这次改了什么"挑对应跳过开关 — 跳过的步骤直接用上次产物,不重做。
+
+| 改的是什么 | 命令 | 耗时 | 说明 |
+|---|---|---|---|
+| **只改了 Rust / installer.nsh / WiX 模板** | `.\build-desktop.ps1 -LiteOnly -BundleOnly` | 1-3 min | 等价 `pnpm exec tauri build --bundles msi`,**最快**重打 |
+| **只改了前端 React 代码** | `.\build-desktop.ps1 -LiteOnly -SkipServer` | 3-5 min | sidecar 不重编,跑 typecheck + vite + tauri bundle |
+| **只改了 build.py 同步逻辑**(`sync_services` / `sync_bundled_models`) | `.\build-desktop.ps1 -LiteOnly -SkipServer -SkipHealthcheck` | 3-5 min | sidecar 复用,但 Step 1b/1c 重跑,把同步改动应用进 bundle |
+| **改了 Python 后端**(`.py` 文件) | `.\build-desktop.ps1 -LiteOnly` | 5-10 min | PyInstaller 指纹自动失效,完整重编 — **不需要手动加任何 -Force** |
+| **怀疑 PyInstaller 缓存过期**(改了 venv / 第三方包但没动 .py) | `.\build-desktop.ps1 -LiteOnly -ForceRebuildServer` | 5-10 min | 强制重编 sidecar,常规改 `.py` 不需要 |
+| **想干净重建**(排查打包问题时) | `.\build-desktop.ps1 -LiteOnly -Clean -VerboseSubprocess` | 8-15 min | 删 `dist/` + `bundle/`,顺带清掉 PyInstaller 指纹 |
+| **本机调试,不需要 ISO** | `.\build-desktop.ps1 -LiteOnly -NoIso` | -2 min | 只出 `.msi + cab`,不打 `.iso` |
+| **本机调试,跳类型检查** | `.\build-desktop.ps1 -LiteOnly -SkipTypecheck` | -30s ~ -1 min | **业务代码改动不要跳** — 只在调试 build 流程时用 |
+
+**分段打包注意事项:**
+
+1. **`-BundleOnly` 不能切 flavor** — 它跳过 Step 1b(`src-tauri/bundled_models/`
+   同步),用的是上次 flavor 的 bundled_models。如果上次 `-LiteOnly`、这次想换
+   `-FullOnly`,必须先跑一次不带 `-BundleOnly` 的完整流让 Step 1b 重做,然后才能
+   `-BundleOnly` 迭代。
+
+2. **改了 build.py 同步逻辑别用 `-BundleOnly`** — `-BundleOnly` 也跳 Step 1b。
+   要用 `-SkipServer -SkipHealthcheck` 这种组合,sidecar 复用但 Step 1b/1c 仍跑。
+
+3. **跨 flavor 串行用 `;` 而不是 `&&`** — PowerShell 没有 `&&`(PS 7+ 才有);
+   要一次跑两个独立 flavor 命令用 `;`:
+   ```powershell
+   .\build-desktop.ps1 -LiteOnly; .\build-desktop.ps1 -FullOnly
+   ```
+   但不推荐 — 直接不传 `-*Only` 让脚本内置双循环更省时间(sidecar 复用)。
+
+4. **MSI/cab 一致性自动校验** — 2026-05-19 起脚本在 Tauri bundle 收尾会自动跑
+   `Test-MsiCabIntegrity`:用 `WindowsInstaller` COM 读 `File`/`Media` 表 + `expand -D`
+   列 cab stream,交叉对一遍。若 File 表里某条 File ID 跟对应 cab 内的 stream 错位
+   (装机时必报 1334"找不到 cab1.cab"),脚本会 fail 并打印前 10 条错位明细 —
+   **坏包不会进 ISO,也不会到用户手里**。无需手动跑,无需关闭。
 
 #### macOS / Linux
 
@@ -1077,7 +1196,13 @@ dist-integrated/    ← 集成版 .dmg / .deb / .AppImage / .msi / .exe
 2. **双 flavor 循环**(默认):每个 flavor 各跑一次以下 4 步 —
    - **Step 1** PyInstaller 出 sidecar(两个 flavor 共用,**模型不嵌 sidecar**)
    - **Step 1b** `build.py --sync-bundled-only` 按 flavor 同步
-     `src-tauri/bundled_models/`:集成版拷整树,轻量版清空
+     `src-tauri/bundled_models/`(LITE_CAPS = embedding/rerank/asr/ocr/tts;
+     FULL_CAPS 再加 chat/image)+ `src-tauri/services/`(`llama-server` +
+     `whisper-server` binary,lite/full 都打 — 老版本 lite 清空 services
+     导致服务起不来,2026-05-18 修)
+   - **Step 1c** 同步 `scripts/diagnose-auto-start.ps1` → `src-tauri/tools/`,
+     installer 装机后落到 `<install>/resources/tools/diagnose-auto-start.ps1`,
+     用户原地可跑做故障排查(见 §10.8)
    - **Step 2** `/healthz` 探测确认 sidecar 能起来
    - **Step 3** Tauri bundle 出 `.dmg / .deb / .AppImage / .msi / .exe`
      并按 flavor 后缀拷到 `dist-<flavor>/`
@@ -1145,6 +1270,97 @@ pnpm typecheck
 ```
 
 详见 [PACKAGING.md §8](PACKAGING.md)。
+
+### 10.8 装完后诊断与故障排查
+
+> **典型问题**:装完启动 app,本地模型服务(chat/embedding/rerank/asr/image-embedding)
+> 全部 `state=stopped` 或 `state=failed`,知识库检索 / 对话拿不到本地推理。
+
+#### 一键诊断脚本
+
+`scripts/diagnose-auto-start.ps1` 自动收齐 8 个 section 的关键信息:安装包版本、
+bundled_models 布局、`sidecar_settings.json` / `local_runtime.yaml` 内容、5 个
+capability HTTP 状态、最新日志 tail、(可选)直接命令行重启 sidecar 抓完整
+`[bootstrap-preload]` / `[auto-start]` stdout 链路。
+
+**两种用法**:
+
+**(A) 开发机有 git checkout** — 直接从仓库跑:
+
+```powershell
+cd D:\code\chayuan\chayuan-desktop
+.\scripts\diagnose-auto-start.ps1 -OutFile diag.md                  # 基础诊断
+.\scripts\diagnose-auto-start.ps1 -CaptureStdout -OutFile diag.md   # 加抓 30 秒 sidecar stdout
+```
+
+**(B) 已装用户没 git** — 脚本随 installer 一起装到了
+`<install>\resources\tools\diagnose-auto-start.ps1`:
+
+```powershell
+cd "$env:LOCALAPPDATA\Programs\chayuan-desktop"
+$diag = Get-ChildItem -Path . -Recurse -Filter 'diagnose-auto-start.ps1' | Select-Object -First 1
+powershell -ExecutionPolicy Bypass -File $diag.FullName -OutFile $HOME\Desktop\diag.md
+# 完整链路(会临时杀掉 sidecar 重启 30 秒,看 [auto-start] state=ready / failed)
+powershell -ExecutionPolicy Bypass -File $diag.FullName -CaptureStdout -OutFile $HOME\Desktop\diag.md
+```
+
+#### 自启链路概览(出问题时按这条链路对照)
+
+```text
+chayuan-server.exe 启动
+  ↓
+[startup] _model_first_launch
+  ├── seed_bundled_models()       — <install>/bundled_models/ → <data>/models/bundled/
+  ├── bootstrap_preload_from_bundled()
+  │   ├── 检测每个 cap 是否有 bundled 内容(src OR dst,二者任一即 True)
+  │   └── 翻 LocalRuntimeSettings.preload_*=True + auto_start.<key>=True + mark_bootstrapped
+  ├── scan_once()                 — 索引 <data>/models/bundled/ 内的模型
+  ├── promote_defaults_from_local() — 把 candidate 写进 panel yaml 作 default
+  └── (step5 preload_map 异步 create_task,作为 redundant 路径)
+  ↓
+[startup] _auto_start_rapidocr    — 拉起 RapidOCR sidecar (auto_start.rapidocr=True)
+  ↓
+[startup] _auto_start_capabilities
+  ├── 兜底再跑一次 bootstrap_preload_from_bundled(防 _model_first_launch 失败)
+  └── for cap in (chat/embedding/rerank/asr/image-embedding):
+        if auto_start_store.get(cap) == True:
+            await reg.get(cap).start()
+              ↓
+              find_server_exe()    — 找 <install>/services/llama-server/llama-server.exe
+                                     (或 whisper-server.exe / Python infinity sidecar)
+              _resolve_args_for()  — 读 panel default_<cap>_model
+              spawn subprocess + /health 探测 → state=ready
+```
+
+#### 常见症状 → 修复路径
+
+| 症状 | 根因 | 修复 |
+|---|---|---|
+| `services/` 目录空 | lite 老版本(2026-05-18 前)build.py 把 lite services 清空 | `git pull` 拿 `f3c51d9`,重 build lite installer |
+| `state=stopped` 持续不动 | `_auto_start_capabilities` 没跑 / 没翻 auto_start | 跑诊断 `-CaptureStdout`,看有没有 `[auto-start]` stdout 行 |
+| `state=failed` + `last_error="llama-server.exe 不在..."` | services 漏打了 launcher binary | 同上,重 build |
+| `state=failed` + `last_error="模型未就绪"` | bundled 模型在但 `promote_defaults` 没指派 default | 进 UI 设置 → AI 平台 → 本地运行时,手动选模型;或重 build 让 scan + promote 重跑 |
+| UI 看不到 sidecar stdout | Tauri 只 emit `cy:sidecar-log` 事件给前端 banner,不落盘 | 用 `-CaptureStdout` 直跑 sidecar,或看 `<data>/logs/*.log` |
+
+#### `_auto_start_capabilities` 自启 hook 输出范例
+
+服务正常起来时 sidecar stdout 会有类似输出(2026-05-18 后版本):
+
+```text
+[bootstrap-preload] checked=['chat','embedding','rerank','asr','image','ocr'] bootstrapped=['embedding','rerank','asr','ocr'] updates=['preload_embedding','preload_rerank','preload_asr']
+[auto-start-rapidocr] settings=...sidecar_settings.json exists=True
+[auto-start-rapidocr] hook 触发 auto_start=rapidocr → True
+[auto-start-rapidocr] 完成 state=ready ...
+[auto-start] 兜底 bootstrap 翻好:[]    (上面已经翻过了,这次 no-op)
+[auto-start] embedding: auto_start=True,拉起中...
+[auto-start] embedding: state=ready pid=22168 endpoint=http://127.0.0.1:62583 last_error=None
+[auto-start] rerank: state=ready pid=22192 endpoint=http://127.0.0.1:62584 ...
+[auto-start] asr: state=ready pid=22216 endpoint=http://127.0.0.1:62585 ...
+[auto-start] image-embedding: auto_start=False,跳过   (lite 没打,正常)
+[auto-start] chat: auto_start=False,跳过              (lite 没打,正常)
+```
+
+任何一行缺失或卡在 `state=failed` 就把 `last_error` 字段拿出来对照上面"常见症状"表。
 
 ---
 

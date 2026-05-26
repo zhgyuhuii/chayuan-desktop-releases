@@ -1,0 +1,26 @@
+# llama.cpp — 轻量 LLM 推理(CPU 友好,GPU 可选)
+# ---------------------------------------------------------------------------
+# 启动:  docker compose -f llamacpp.yaml up -d --wait
+# 模型:  把 .gguf 文件放到 ${VOLUME llamacpp-models}/ 下,
+#        或改 command 用 -m 指定具体模型路径
+# ---------------------------------------------------------------------------
+
+services:
+  llamacpp:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    container_name: chayuan-llamacpp
+    restart: unless-stopped
+    ports:
+      - "18080:8080"
+    volumes:
+      - llamacpp-models:/models
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    # 默认监听 :8080;若要用 GPU 版本改 image: ghcr.io/ggerganov/llama.cpp:server-cuda
+
+volumes:
+  llamacpp-models:

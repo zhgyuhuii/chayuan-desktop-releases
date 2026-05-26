@@ -1,0 +1,90 @@
+# Profile: cluster
+#
+# Goal: K8s-native, 500+ concurrent users, multi-GPU node pools.
+# All durable services are EXTERNAL — nothing is launched as a subprocess
+# inside the gateway pods.  The supervisor for this profile only manages
+# in-cluster sidecars (e.g. CSI helpers); chart values are the source of
+# truth for endpoints.
+
+profile: cluster
+
+# ---- Storage ---------------------------------------------------------------
+storage:
+  driver: s3                        # MinIO cluster behaves as S3
+  s3:
+    endpoint_env: STORAGE_S3_ENDPOINT
+    bucket_env: STORAGE_S3_BUCKET
+    region: cn-prod
+    access_key_env: STORAGE_S3_ACCESS_KEY
+    secret_key_env: STORAGE_S3_SECRET_KEY
+    secure: true
+
+database:
+  driver: postgres
+  dsn_env: PG_DSN
+  pool_size: 50
+  echo: false
+
+vectorstore:
+  driver: milvus_cluster
+  endpoint_env: MILVUS_ENDPOINT     # e.g. milvus-proxy.milvus.svc:19530
+
+# ---- Auth ------------------------------------------------------------------
+auth:
+  mode: jwt
+  jwt_jwks_url_env: JWT_JWKS_URL
+  jwt_audience_env: JWT_AUDIENCE
+  rbac:
+    enabled: true
+
+# ---- In-pod processes ------------------------------------------------------
+# In K8s, the gateway pod's own supervisor only runs the gateway and discovery;
+# all other services are separate Deployments.
+processes:
+  enabled:
+    - discovery
+    - gateway
+  disabled:
+    - postgres
+    - redis
+    - minio
+    - milvus
+    - ollama
+    - vllm
+    - comfyui
+    - funasr
+    - cosyvoice
+    - piper
+    - rapidocr
+    - paddleocr
+    - llamacpp
+    - infinity
+
+# ---- External companion endpoints (filled by Helm) -------------------------
+companions:
+  onlyoffice:
+    enabled: true
+    endpoint_env: ONLYOFFICE_URL    # https://onlyoffice.example.com
+    jwt_secret_env: ONLYOFFICE_JWT_SECRET
+    sticky: true                    # LB must do session affinity
+  milvus_standalone:
+    enabled: false
+
+# ---- No probing in cluster -------------------------------------------------
+local_service_probe:
+  enabled: false                    # endpoints come from Helm
+
+# ---- Networking ------------------------------------------------------------
+gateway:
+  host: 0.0.0.0
+  port: 8080                        # Service exposes 80 -> 8080
+  cors_origins:
+    - https://chayuan.example.com
+  rate_limit_qpm: 60000
+
+# ---- Telemetry / observability --------------------------------------------
+telemetry:
+  enabled: true
+  prometheus_path: /metrics
+  otlp_endpoint_env: OTEL_EXPORTER_OTLP_ENDPOINT
+  service_name: chayuan-gateway

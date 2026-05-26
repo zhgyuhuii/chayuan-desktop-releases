@@ -1,0 +1,61 @@
+{
+  "$schema": "../../../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "察元 AI · 瘦客户端",
+  "version": "0.1.0",
+  "identifier": "ai.chayuan.client.thin",
+  "build": {
+    "beforeDevCommand": "VITE_THIN_CLIENT=1 pnpm dev:vite",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "VITE_THIN_CLIENT=1 pnpm build:vite",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "察元 AI",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 880,
+        "minHeight": 560,
+        "decorations": true,
+        "fullscreen": false,
+        "resizable": true,
+        "transparent": false
+      }
+    ],
+    "security": {
+      "// CSP 注释": "瘦客户端要连任意管理员配置的 server，因此 connect-src 必须放开 http(s)://*；img/blob 仍只允许 self+blob+data，避免 webview XSS。",
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; connect-src 'self' http://* https://* ws://* wss://* ipc: https://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "// targets 注释": "thin 包只发轻量目标：NSIS .exe (Windows)、AppImage (Linux)、DMG (macOS)；不发 msi/rpm 减少冗余。",
+    "targets": ["nsis", "appimage", "dmg"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "nsis": { "languages": ["SimpChinese", "English"] }
+    },
+    "linux": {
+      "deb": { "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"] },
+      "appimage": { "bundleMediaFramework": false }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "hardenedRuntime": true
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": false,
+      "endpoints": ["https://example.com/updates/{{target}}/{{current_version}}"],
+      "pubkey": ""
+    }
+  }
+}

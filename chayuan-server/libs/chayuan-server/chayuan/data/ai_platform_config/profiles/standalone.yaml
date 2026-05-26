@@ -1,0 +1,96 @@
+# Profile: standalone
+#
+# Goal: zero env vars, zero external services, runs on a personal laptop /
+# desktop, with the user only choosing a data directory at first launch.
+#
+# Apply:   chayuan profile use standalone
+# Inspect: chayuan profile show
+#
+# This file is layered on top of `config/default.yaml`.  Anything not
+# explicitly set here inherits.  All paths below are RELATIVE to
+# <CHAYUAN_HOME> (chosen by the install wizard, defaulting to the OS
+# convention; see chayuan_core.paths).
+
+profile: standalone
+
+# ---- Storage / database / vector store --------------------------------------
+storage:
+  driver: local                     # local | minio | s3
+  local:
+    root: storage                   # <CHAYUAN_HOME>/storage
+    presigned_via: gateway          # short-lived signed URL through the gateway
+
+database:
+  driver: sqlite                    # sqlite | postgres
+  path: data/registry.sqlite
+  pragmas:
+    journal_mode: WAL
+    synchronous: NORMAL
+    busy_timeout: 5000
+
+vectorstore:
+  driver: milvus_lite               # milvus_lite | milvus_standalone | qdrant
+  path: data/milvus.db
+
+# ---- Auth (single-user) -----------------------------------------------------
+auth:
+  mode: single_user                 # single_user | api_key | jwt
+  default_api_key: auto             # generate one to <CHAYUAN_HOME>/data/runtime.json on first start
+
+# ---- Subprocess topology overrides -----------------------------------------
+# Everything optional; the supervisor will skip a process if its binary is
+# absent.  Keep heavy / GPU-only stacks OFF here; the user opts in via UI.
+processes:
+  enabled:
+    - discovery
+    - gateway
+    - ollama                        # only if vendor/services/ollama exists
+    - infinity                      # only if pip wheel + vendor python exist
+    - piper                         # only if vendor/services/piper exists
+    - rapidocr                      # CPU-friendly default OCR
+  disabled:
+    - postgres                      # use SQLite instead
+    - redis                         # gateway falls back to in-memory rate limit
+    - minio                         # use LocalFSStorage
+    - milvus                        # use Milvus Lite
+    - vllm                          # GPU-server form
+    - comfyui                       # opt-in: too heavy for laptops by default
+    - cosyvoice                     # opt-in
+    - paddleocr                     # opt-in
+    - funasr                        # opt-in
+    - llamacpp                      # opt-in fallback
+
+# ---- Companions (Docker-launched, not embedded) ----------------------------
+companions:
+  onlyoffice:
+    enabled: auto                   # auto = ask the user when needed
+    image: onlyoffice/documentserver:8.2
+    port: 38389
+    docker_required: true
+    fallback: upload_only           # if docker missing, only allow upload-and-render
+  milvus_standalone:
+    enabled: false
+
+# ---- Local-service probing --------------------------------------------------
+# At first launch, scan localhost for these services and ask the user whether
+# to reuse them.  See chayuan_preflight.local_services.
+local_service_probe:
+  enabled: true
+  ask_user: true                    # show a wizard card; if false, just record findings
+  candidates:
+    - postgres
+    - redis
+    - minio
+    - ollama
+    - docker
+    - onlyoffice
+
+# ---- Networking -------------------------------------------------------------
+gateway:
+  host: 127.0.0.1                   # standalone never binds 0.0.0.0
+  port: 38080
+  cors_origins: ["*"]                # local UI only; harmless
+
+# ---- Telemetry --------------------------------------------------------------
+telemetry:
+  enabled: false                    # privacy-first

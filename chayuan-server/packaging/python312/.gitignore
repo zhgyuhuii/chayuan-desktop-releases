@@ -1,0 +1,7 @@
+.cache/
+build/
+sbom.json
+*.egg-info/
+__pycache__/
+*.pyc
+.venv/

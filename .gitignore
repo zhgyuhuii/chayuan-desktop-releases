@@ -1,0 +1,121 @@
+# ===== Node / pnpm =====
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+.npm/
+.yarn/
+
+# Vite / Tauri 前端构建产物
+dist/
+.vite/
+.cache/
+
+# ===== Python / Poetry =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.venv/
+venv/
+env/
+.eggs/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ===== Rust / Cargo / Tauri =====
+target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# ===== PyInstaller =====
+build/
+*.manifest
+*.spec.bak
+
+# ===== Tauri sidecar 二进制(bundle 时再生成) =====
+chayuan-client/apps/desktop/src-tauri/binaries/*.exe
+chayuan-client/apps/desktop/src-tauri/binaries/chayuan-server-*
+!chayuan-client/apps/desktop/src-tauri/binaries/.gitkeep
+
+# ===== 用户数据 / 运行时 =====
+chayuan_data/
+*.sqlite
+*.sqlite3
+*.db-journal
+logs/
+*.log
+tmp/
+.tmp/
+
+# ===== 顶层备份文件 =====
+server.zip
+*.zip
+*.tar.gz
+*.7z
+
+# ===== 配置 / 密钥 =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+.secrets/
+
+# ===== IDE / OS =====
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Claude Code 内部 =====
+.claude/
+
+# ===== 模型权重(单文件可能上 GB,不入库) =====
+# 见 chayuan-server/vendor/bundled_models/README.md:模型由 chayuan_packaging
+# fetch 在打包前预拉,本仓库只保留 .gitkeep + README。
+*.gguf
+*.safetensors
+*.onnx
+chayuan-server/vendor/bundled_models/**/*.bin
+
+# Tauri resources staging:build.py 在集成版打包时把 vendor/bundled_models/
+# 复制到这里供 tauri 把模型打进 NSIS installer。运行时构件,不入库。
+chayuan-client/apps/desktop/src-tauri/bundled_models/
+chayuan-client/apps/desktop/src-tauri/services/
+# tools/:build-desktop.ps1 把 scripts/diagnose-auto-start.ps1 同步进来,
+# Tauri 把它打成 resources/_up_/scripts/diagnose-auto-start.ps1。同样运行时构件。
+chayuan-client/apps/desktop/src-tauri/tools/
+chayuan-client/apps/desktop/src-tauri/torch_wheels/
+
+# PyTorch wheels staging:preflight_torch 预下载到 vendor/torch_wheels/<sub>/*.whl
+# (体积 ~250 MB / 平台 × 4 平台 ≈ 1 GB)。运行时构件,跟 bundled_models 一样不入库。
+*.whl
+chayuan-server/dist/torch_wheels_seed/
+
+# ===== 单机版打包产物(build-desktop 生成,绝不入库) =====
+# PyInstaller --onedir 服务端 bundle:build.py 拷进来供 Tauri 打包。跟同级
+# bundled_models/ services/ tools/ 一样是运行时构件(2026-05-19 --onedir
+# 切换后新增的 resource 目录,之前漏进 .gitignore)。
+chayuan-client/apps/desktop/src-tauri/chayuan-server/
+# build-desktop 收尾把各 flavor 最终安装包收集到 dist-<flavor>/
+/dist-*/
+# ISO 镜像(Windows full 包分发载体)+ 下载中途的 .part
+*.iso
+*.iso.part
+
+# vendor/bundled_models/:模型权重 / 配置 / 缓存均为 build 时下载,只留 .gitkeep
+# 目录骨架(*.gguf/*.onnx 等大文件上面已忽略,这里连配置/分词器小文件一并忽略)。
+chayuan-server/vendor/bundled_models/**
+!chayuan-server/vendor/bundled_models/**/
+!chayuan-server/vendor/bundled_models/**/.gitkeep
+!chayuan-server/vendor/bundled_models/**/README.md

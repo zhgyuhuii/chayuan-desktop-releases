@@ -1,0 +1,252 @@
+# Declarative process topology.
+#
+# Run via:  chayuan service start            (or: python -m chayuan_supervisor up)
+# Show:     chayuan service info             prints final port + creds table
+# Plan:     chayuan service plan             dry-run dependency graph
+#
+# Field cheatsheet
+# ----------------
+#   port: PG_PORT                        the placeholder ${PG_PORT} used in args
+#   preferred_port: 35432                try this first; auto-bump if occupied
+#   port_aliases:                        extra named ports (e.g. MinIO console)
+#       MINIO_CONSOLE_PORT: 39001
+#   credentials:                         auto-generated, persisted to runtime.json
+#       user_env: PG_USER
+#       password_env: PG_PASSWORD
+#   expose:                              metadata for chayuan service info
+#       kind: postgres                   one of postgres/redis/minio/milvus/ollama/http
+#       scheme: postgresql
+#       database: chayuan
+#   optional: true                       missing binary is non-fatal
+#
+# All "preferred_port" values intentionally avoid the upstream defaults
+# (5432, 6379, 9000, 19530, 11434, ...) so this stack can coexist with any
+# manually-installed service on the same machine.
+
+processes:
+  - name: postgres
+    binary: vendor/services/postgres/bin/postgres
+    args: ["-D", "data/postgres", "-p", "${PG_PORT}", "-h", "127.0.0.1"]
+    env:
+      LANG: C.UTF-8
+    port: PG_PORT
+    preferred_port: 35432               # 5432 + 30000
+    credentials:
+      user_env: PG_USER
+      password_env: PG_PASSWORD
+    expose:
+      kind: postgres
+      scheme: postgresql
+      database: chayuan
+    health: tcp://127.0.0.1:${PG_PORT}
+    init:
+      - ["vendor/services/postgres/bin/initdb", "-D", "data/postgres",
+         "-U", "${PG_USER}", "-E", "UTF8", "--auth=trust", "--no-locale"]
+    optional: true
+
+  - name: redis
+    binary: vendor/services/redis/redis-server
+    args:
+      - "--port"
+      - "${REDIS_PORT}"
+      - "--bind"
+      - "127.0.0.1"
+      - "--dir"
+      - "data/redis"
+      - "--appendonly"
+      - "yes"
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+    port: REDIS_PORT
+    preferred_port: 36379               # 6379 + 30000
+    credentials:
+      user_env: REDIS_USER              # not used by redis but exposed
+      password_env: REDIS_PASSWORD
+    expose:
+      kind: redis
+      scheme: redis
+    health: tcp://127.0.0.1:${REDIS_PORT}
+    optional: true
+
+  - name: minio
+    binary: vendor/services/minio/minio
+    args:
+      - "server"
+      - "data/minio"
+      - "--address"
+      - "127.0.0.1:${MINIO_PORT}"
+      - "--console-address"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT}"
+    env:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+    port: MINIO_PORT
+    preferred_port: 39000               # default 9000 + 30000
+    port_aliases:
+      MINIO_CONSOLE_PORT: 39001
+    credentials:
+      user_env: MINIO_ROOT_USER
+      password_env: MINIO_ROOT_PASSWORD
+      user: chayuan_admin
+    expose:
+      kind: minio
+      scheme: http
+    health: http://127.0.0.1:${MINIO_PORT}/minio/health/live
+    optional: true
+
+  - name: milvus
+    # Standalone server. For dev / desktop the recommendation is to use
+    # Milvus Lite (in-process; pip wheel via pymilvus[lite]) — leave this
+    # entry as `optional: true` and only enable when you really need
+    # >100M vectors or shared cluster access.
+    binary: vendor/services/milvus/milvus
+    args: ["run", "standalone"]
+    env:
+      MILVUS_PROXY_PORT: "${MILVUS_PORT}"
+      ETCD_ENDPOINTS: "127.0.0.1:${MILVUS_ETCD_PORT}"
+    port: MILVUS_PORT
+    preferred_port: 39530               # default 19530 + 20000
+    port_aliases:
+      MILVUS_ETCD_PORT: 39379
+      MILVUS_WEBUI_PORT: 39091
+    credentials:
+      no_auth: true
+    expose:
+      kind: milvus
+      scheme: grpc
+    health: tcp://127.0.0.1:${MILVUS_PORT}
+    optional: true
+
+  - name: ollama
+    binary: vendor/services/ollama/ollama
+    args: ["serve"]
+    env:
+      OLLAMA_HOST: "127.0.0.1:${OLLAMA_PORT}"
+      OLLAMA_MODELS: "models/chat/_ollama"
+    port: OLLAMA_PORT
+    preferred_port: 31434               # default 11434 + 20000
+    credentials:
+      no_auth: true
+    expose:
+      kind: ollama
+      scheme: http
+    health: http://127.0.0.1:${OLLAMA_PORT}/api/tags
+    optional: true
+
+  - name: infinity
+    binary: vendor/runtimes/python/bin/python
+    args:
+      - "-m"
+      - "infinity_emb"
+      - "v2"
+      - "--host"
+      - "127.0.0.1"
+      - "--port"
+      - "${INFINITY_PORT}"
+    port: INFINITY_PORT
+    preferred_port: 37997               # default 7997 + 30000
+    credentials:
+      no_auth: true
+    expose:
+      kind: http
+      scheme: http
+    health: http://127.0.0.1:${INFINITY_PORT}/health
+    optional: true
+
+  - name: llamacpp
+    binary: vendor/services/llama-cpp/llama-server
+    args: ["--host", "127.0.0.1", "--port", "${LLAMACPP_PORT}"]
+    port: LLAMACPP_PORT
+    preferred_port: 38086
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: vllm
+    binary: vendor/runtimes/python/bin/python
+    args: ["-m", "vllm.entrypoints.openai.api_server",
+           "--host", "127.0.0.1", "--port", "${VLLM_PORT}"]
+    port: VLLM_PORT
+    preferred_port: 38000               # default 8000 + 30000
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: comfyui
+    binary: vendor/services/comfyui/python
+    args: ["main.py", "--listen", "127.0.0.1", "--port", "${COMFYUI_PORT}"]
+    cwd: vendor/services/comfyui
+    port: COMFYUI_PORT
+    preferred_port: 38188               # default 8188 + 30000
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: funasr
+    binary: vendor/runtimes/python/bin/python
+    args: ["-m", "funasr.runtime.python.api", "--port", "${FUNASR_PORT}"]
+    port: FUNASR_PORT
+    preferred_port: 38180
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: cosyvoice
+    binary: vendor/runtimes/python/bin/python
+    args: ["-m", "cosyvoice.serve", "--port", "${COSYVOICE_PORT}"]
+    port: COSYVOICE_PORT
+    preferred_port: 38280
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: piper
+    binary: vendor/services/piper/piper
+    args: ["--quiet"]
+    port: PIPER_PORT
+    preferred_port: 38088
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: rapidocr
+    binary: vendor/runtimes/python/bin/python
+    args: ["-m", "rapidocr_onnxruntime.api", "--port", "${OCR_PORT}"]
+    port: OCR_PORT
+    preferred_port: 38089
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: paddleocr
+    binary: vendor/runtimes/python/bin/python
+    args: ["-m", "paddleocr.serve", "--port", "${PADDLEOCR_PORT}"]
+    port: PADDLEOCR_PORT
+    preferred_port: 38090
+    credentials: { no_auth: true }
+    expose: { kind: http }
+    optional: true
+
+  - name: discovery
+    binary: vendor/runtimes/python/bin/python
+    args: ["-m", "chayuan_discovery"]
+    credentials: { no_auth: true }
+    health: cmd:test -d models
+
+  - name: gateway
+    binary: vendor/runtimes/python/bin/python
+    args: ["-m", "chayuan_gateway", "--host", "127.0.0.1", "--port", "${GATEWAY_PORT}"]
+    env:
+      CHAYUAN_GATEWAY_PORT: "${GATEWAY_PORT}"
+      CHAYUAN_GATEWAY_HOST: "127.0.0.1"
+    port: GATEWAY_PORT
+    preferred_port: 38080               # the official UI / SDK entry
+    credentials:
+      user_env: CHAYUAN_GATEWAY_API_KEY
+      password_env: CHAYUAN_GATEWAY_API_SECRET
+      user: chayuan
+    expose:
+      kind: http
+      scheme: http
+    health: http://127.0.0.1:${GATEWAY_PORT}/healthz
+    depends_on: [discovery]

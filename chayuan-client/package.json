@@ -1,0 +1,45 @@
+{
+  "name": "chayuan-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "察元 AI 全栈 — Tauri 2 + React 19 客户端 + server/（FastAPI 后端）monorepo",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.10",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @chayuan/web dev",
+    "dev:desktop": "pnpm --filter @chayuan/desktop dev",
+    "dev:web": "pnpm --filter @chayuan/web dev",
+    "build": "pnpm -r --filter './packages/*' build && pnpm --filter @chayuan/web build && pnpm --filter @chayuan/desktop build",
+    "build:web": "pnpm -r --filter './packages/*' build && pnpm --filter @chayuan/web build",
+    "build:desktop": "pnpm -r --filter './packages/*' build && pnpm --filter @chayuan/desktop build",
+    "build:desktop:full": "pnpm -r --filter './packages/*' build && pnpm --filter @chayuan/desktop build:full",
+    "build:desktop:integrated": "pnpm run build:desktop:full",
+    "build:desktop:fast": "pnpm -r --filter './packages/*' build && pnpm --filter @chayuan/desktop build:fast",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:desktop": "pnpm --filter @chayuan/e2e-desktop test",
+    "storybook": "pnpm --filter @chayuan/app storybook",
+    "storybook:build": "pnpm --filter @chayuan/app storybook:build",
+    "chromatic": "pnpm --filter @chayuan/app chromatic",
+    "gen:api": "node tools/api-codegen.mjs",
+    "gen:api:check": "node tools/api-codegen.mjs --check",
+    "clean": "pnpm -r exec -- rimraf dist .turbo node_modules/.cache && rimraf node_modules"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "openapi-typescript": "^7.4.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

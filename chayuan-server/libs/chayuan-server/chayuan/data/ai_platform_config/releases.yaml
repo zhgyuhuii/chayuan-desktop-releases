@@ -1,0 +1,24 @@
+# Release matrix overrides. If a release name is missing here, the built-in
+# preset (chayuan_packager.filter.RELEASE_PRESETS) is used.
+
+releases:
+  lite:
+    categories: [chat, embedding, rerank, ocr]
+    max_models_per_category: 1
+    max_size_per_category_gb: 2.0
+    include_runtimes: [python]
+    include_services: [ollama, redis]
+
+  standard:
+    categories: [chat, embedding, rerank, clip, tts, asr, ocr]
+    max_models_per_category: 2
+    max_size_per_category_gb: 8.0
+    include_runtimes: [python]
+    include_services: [ollama, postgres, redis, piper]
+
+  pro:
+    categories: [chat, embedding, rerank, clip, t2i, t2v, tts, asr, ocr]
+    max_models_per_category: 4
+    max_size_per_category_gb: 64.0
+    include_runtimes: ~
+    include_services: ~

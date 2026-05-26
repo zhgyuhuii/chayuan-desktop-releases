@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>__CHAYUAN_APP_NAME__</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>__CHAYUAN_APP_NAME__</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>__CHAYUAN_BUNDLE_ID__</string>
+
+    <!-- 构建脚本替换占位符 -->
+    <key>CFBundleVersion</key>
+    <string>__CHAYUAN_VERSION__</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>__CHAYUAN_VERSION__</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleSignature</key>
+    <string>????</string>
+
+    <key>CFBundleExecutable</key>
+    <string>Chayuan</string>
+
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+
+    <!-- 菜单栏-only 应用：不显示 Dock 图标、不进入 Cmd+Tab 切换 -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <!-- macOS 最低支持版本 -->
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+
+    <!-- 允许访问用户的文档目录（首次 init 可能写 ~/Library/Application Support/chayuan） -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2025 北京智灵鸟科技中心. Licensed under MIT.</string>
+
+    <!-- 明确声明只支持 arm64（构建产物为 arm64） -->
+    <key>LSArchitecturePriority</key>
+    <array>
+        <string>arm64</string>
+    </array>
+</dict>
+</plist>

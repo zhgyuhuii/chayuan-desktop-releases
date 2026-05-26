@@ -1,0 +1,76 @@
+{
+  "$schema": "../../../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Chayuan",
+  "version": "1.0.0",
+  "identifier": "ai.chayuan.client",
+  "build": {
+    "beforeDevCommand": "pnpm dev:vite",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build:vite",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "察元 AI",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 880,
+        "minHeight": 560,
+        "decorations": true,
+        "fullscreen": false,
+        "resizable": true,
+        "transparent": false,
+        "backgroundColor": "#0f172a",
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http://127.0.0.1:62581 http://127.0.0.1:3000; connect-src 'self' http://127.0.0.1:62581 http://127.0.0.1:3000 https://* ipc: http://ipc.localhost https://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "deb", "app"],
+    "externalBin": [],
+    "resources": [
+      "chayuan-server/**/*",
+      "bundled_models/**/*",
+      "services/**/*",
+      "tools/**/*"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "wix": {
+        "language": ["zh-CN"],
+        "template": "wix/main.wxs"
+      },
+      "nsis": {
+        "languages": ["SimpChinese", "English"],
+        "installerHooks": "./installer.nsh"
+      }
+    },
+    "linux": {
+      "deb": { "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"] },
+      "appimage": { "bundleMediaFramework": true }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "hardenedRuntime": true
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": false,
+      "endpoints": ["https://example.com/updates/{{target}}/{{current_version}}"],
+      "pubkey": ""
+    }
+  }
+}

@@ -1,0 +1,2 @@
+source-build: llama.cpp master (ubuntu:20.04 容器,glibc<=2.29 / GLIBCXX<=3.4.26)
+2026-05-21

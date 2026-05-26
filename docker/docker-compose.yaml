@@ -1,0 +1,114 @@
+# 察元 AI 单机版 Docker Compose
+# ====================================================================
+# 一个 service 同时跑 chayuan-server (Python + sidecar) + nginx
+# (前端 SPA + API 反代),浏览器开 http://<host>:8080 即用。
+#
+# 所有可变数据通过 volume 映射到本目录 (docker/) 下子目录:
+#   ./data            ← KB metadata / sqlite / 上传文件 / 日志
+#   ./bundled_models  ← chat/embedding/rerank/asr 模型 (用户自备 GGUF)
+#   ./config          ← 可选: 覆盖 *.yaml 配置 (basic_settings.yaml 等)
+#   ./logs            ← chayuan-server / nginx 日志
+#
+# 一键启动:
+#   cd docker
+#   docker compose up -d --build
+#
+# 升级:
+#   git pull
+#   docker compose up -d --build       # 重新 build image,数据保留
+#
+# 看 log:
+#   docker compose logs -f chayuan
+#
+# 进容器调试:
+#   docker compose exec chayuan bash
+#
+# 停 + 清:
+#   docker compose down                # 停容器, 数据保留
+#   docker compose down -v             # 顺带删 named volume (本配置没用,只用 bind mount)
+#
+# 注意:第一次启动需要等 sidecar 初始化 + 加载模型,约 60-180s。
+# ====================================================================
+
+services:
+  chayuan:
+    build:
+      # context = repo 根,这样 .dockerignore + chayuan-server/ + chayuan-client/
+      # 都可见。Dockerfile 路径相对 context。
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: chayuan-server:latest
+    container_name: chayuan-server
+    restart: unless-stopped
+
+    # 三个浏览器入口,全部暴露:
+    #   :8080  → 前端 SPA (主入口,nginx 反代后端 API,无 CORS)
+    #   :62581 → 后端 API 直连 (Tauri / WPS / 三方系统集成用)
+    #   :8502  → 后台配置面板 (NiceGUI,改 yaml/模型/账号)
+    # 端口冲突时只改宿主侧(冒号左边),容器内端口写死不可改。
+    ports:
+      - "8080:80"        # 前端 + API 反代  ← 浏览器主入口
+      - "62581:62581"    # 后端 API 直连
+      - "8502:8502"      # 后台配置面板 (NiceGUI)
+
+    # 挂载点 = compose 同目录子目录,git ignore 已配
+    volumes:
+      - ./data:/chayuan/data
+      - ./bundled_models:/chayuan/app/chayuan-server/vendor/bundled_models
+      - ./config:/chayuan/config
+      - ./logs:/chayuan/logs
+
+    # .env 同目录,可选,会覆盖下面 environment(详见 .env.example)
+    env_file:
+      - path: .env
+        required: false
+
+    # 环境变量(也可改 .env 文件,同目录)
+    # 默认 == 单机匿名模式:所有请求按 GUEST 放行,无需登录。
+    # 切多用户(下面取消注释):
+    #   CHAYUAN_AUTH_REQUIRED=true     → 全接口要 JWT
+    #   CHAYUAN_ALLOW_REGISTRATION=false → 关自助注册(只 admin 后台开账号)
+    #   AUTH_DEFAULT_ADMIN_PASSWORD=…  → 初始 admin 密码,留空首次启动随机生成(看日志)
+    #   JWT_SECRET=…                   → 必填长字符串,否则随机+重启就作废
+    environment:
+      # ── 部署/profile ──────────────────────────────────────────
+      CHAYUAN_ROOT: /chayuan/data
+      CHAYUAN_PROFILE: single-machine        # 单机内核(sqlite-vec/inproc/asyncio)
+      CHAYUAN_REDIS: disabled
+      CHAYUAN_QUEUE: inproc
+      CHAYUAN_VECTOR_STORE: sqlite-vec
+      CHAYUAN_AUTO_INSTALL_DEPS: "false"
+      CHAYUAN_ROOT_IGNORE_STATE: "1"
+      CHAYUAN_VENDOR_PLATFORM: linux-x64
+      CHAYUAN_PRELOAD_ON_START: "false"
+
+      # ── 鉴权 / 多用户(默认匿名,Docker 用户按需开启) ────────────
+      # CHAYUAN_AUTH_REQUIRED 控制是否要登录:
+      #   "false" (默认): 无登录,任何请求按 GUEST(单机/局域网体验)
+      #   "true"        : 启用 JWT,/chat/* /knowledge_base/* 等必须带 Token
+      CHAYUAN_AUTH_REQUIRED: "false"
+      # 是否开放自助注册:true=登录页有"注册"按钮,false=只管理员后台开账号
+      CHAYUAN_ALLOW_REGISTRATION: "true"
+      # 多用户模式必填:JWT 签名密钥(留空进程会随机生成,重启所有 Token 作废)
+      # 生成:openssl rand -hex 64
+      JWT_SECRET: ""
+      # 多用户模式建议显式设:首次启动若没用户,按此用户名+密码建管理员
+      # 密码留空 = 首次启动随机生成并打到日志(docker logs 截一次)
+      AUTH_DEFAULT_ADMIN_USERNAME: "admin"
+      AUTH_DEFAULT_ADMIN_PASSWORD: ""
+
+    # 资源建议(单机:留给宿主机 OS / 其它进程一半 CPU + RAM)
+    # 不强制,docker 会按宿主机能力分。
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '4.0'
+    #       memory: 12g
+
+    # 健康探活(Dockerfile 也定义了,这里 compose 层覆盖一份)
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 10s
+      start_period: 180s
+      retries: 5

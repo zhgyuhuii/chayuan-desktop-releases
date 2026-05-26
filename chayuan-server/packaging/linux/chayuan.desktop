@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Chayuan
+Name[zh_CN]=察元 AI 助手
+GenericName=AI Knowledge Base Assistant
+GenericName[zh_CN]=本地知识库 AI 助手
+Comment=Local LLM + RAG chat powered by LangChain
+Comment[zh_CN]=基于 LangChain 的本地知识库与 Agent 对话助手
+Exec=AppRun %U
+Icon=chayuan
+Terminal=false
+Categories=Office;Development;
+StartupNotify=true
+StartupWMClass=chayuan
+Keywords=AI;LLM;RAG;Knowledge;Chat;LangChain;

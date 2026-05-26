@@ -1,0 +1,109 @@
+{{- if .Values.gateway.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chayuan.gateway.fullname" . }}
+  labels: {{- include "chayuan.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.gateway.replicas }}
+  selector:
+    matchLabels: {{- include "chayuan.gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "chayuan.gateway.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: gateway
+          image: "{{ .Values.global.registry }}/{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}"
+          imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.gateway.service.port }}
+          env:
+            - name: REDIS_URL
+              value: {{ default .Values.redis.url .Values.gateway.env.REDIS_URL | quote }}
+            - name: DATABASE_URL
+              value: {{ default .Values.postgres.url .Values.gateway.env.DATABASE_URL | quote }}
+            - name: CHAYUAN_MIRROR
+              value: {{ .Values.gateway.env.CHAYUAN_MIRROR | quote }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources: {{- toYaml .Values.gateway.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "chayuan.gateway.fullname" . }}
+  labels: {{- include "chayuan.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.gateway.service.type }}
+  ports:
+    - port: {{ .Values.gateway.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector: {{- include "chayuan.gateway.selectorLabels" . | nindent 4 }}
+{{- if .Values.gateway.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "chayuan.gateway.fullname" . }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "chayuan.gateway.fullname" . }}
+  minReplicas: {{ .Values.gateway.hpa.minReplicas }}
+  maxReplicas: {{ .Values.gateway.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gateway.hpa.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- if .Values.gateway.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "chayuan.gateway.fullname" . }}
+  annotations: {{- toYaml .Values.gateway.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.gateway.ingress.className }}
+  rules:
+    {{- range .Values.gateway.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "chayuan.gateway.fullname" $ }}
+                port:
+                  number: {{ $.Values.gateway.service.port }}
+          {{- end }}
+    {{- end }}
+  {{- with .Values.gateway.ingress.tls }}
+  tls: {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

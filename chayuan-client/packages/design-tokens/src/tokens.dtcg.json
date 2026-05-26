@@ -1,0 +1,66 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "brand": {
+      "500": { "$value": "#3D7BFF", "$type": "color" },
+      "600": { "$value": "#2563EB", "$type": "color" }
+    },
+    "ink": {
+      "700": { "$value": "#0A0A0A", "$type": "color" },
+      "800": { "$value": "#000000", "$type": "color" }
+    },
+    "iris": {
+      "from": { "$value": "#A78BFA", "$type": "color" },
+      "via": { "$value": "#7C3AED", "$type": "color" },
+      "to": { "$value": "#4F46E5", "$type": "color" }
+    },
+    "glow": {
+      "pink": { "$value": "#FFB6C1", "$type": "color" },
+      "blue": { "$value": "#7CB7FF", "$type": "color" },
+      "green": { "$value": "#86E6BE", "$type": "color" }
+    },
+    "badge": {
+      "hot": { "$value": "#F97316", "$type": "color" },
+      "new": { "$value": "#10B981", "$type": "color" }
+    }
+  },
+  "radius": {
+    "sm": { "$value": "4px", "$type": "dimension" },
+    "md": { "$value": "8px", "$type": "dimension" },
+    "lg": { "$value": "12px", "$type": "dimension" },
+    "xl": { "$value": "16px", "$type": "dimension" },
+    "2xl": { "$value": "20px", "$type": "dimension" },
+    "3xl": { "$value": "24px", "$type": "dimension" },
+    "full": { "$value": "9999px", "$type": "dimension" }
+  },
+  "spacing": {
+    "1": { "$value": "4px", "$type": "dimension" },
+    "2": { "$value": "8px", "$type": "dimension" },
+    "3": { "$value": "12px", "$type": "dimension" },
+    "4": { "$value": "16px", "$type": "dimension" },
+    "5": { "$value": "20px", "$type": "dimension" },
+    "6": { "$value": "24px", "$type": "dimension" },
+    "8": { "$value": "32px", "$type": "dimension" },
+    "10": { "$value": "40px", "$type": "dimension" },
+    "12": { "$value": "48px", "$type": "dimension" }
+  },
+  "fontSize": {
+    "xs": { "$value": "12px", "$type": "dimension" },
+    "sm": { "$value": "13px", "$type": "dimension" },
+    "base": { "$value": "14px", "$type": "dimension" },
+    "md": { "$value": "16px", "$type": "dimension" },
+    "lg": { "$value": "18px", "$type": "dimension" },
+    "xl": { "$value": "20px", "$type": "dimension" },
+    "2xl": { "$value": "24px", "$type": "dimension" }
+  },
+  "motion": {
+    "duration": {
+      "fast": { "$value": "120ms", "$type": "duration" },
+      "normal": { "$value": "200ms", "$type": "duration" },
+      "slow": { "$value": "320ms", "$type": "duration" }
+    },
+    "easing": {
+      "standard": { "$value": "cubic-bezier(0.2, 0, 0, 1)", "$type": "cubicBezier" }
+    }
+  }
+}

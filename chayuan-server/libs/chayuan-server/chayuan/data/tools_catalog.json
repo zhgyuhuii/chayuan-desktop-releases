@@ -1,0 +1,546 @@
+{
+  "version": "1.0.0",
+  "source": "bundled",
+  "note": "察元内置工具目录；可通过 CHAYUAN_ROOT/tools_catalog.override.json 覆盖/补充。",
+  "categories": {
+    "rag": "检索增强 (RAG)",
+    "web": "网络与信息获取",
+    "math": "数学与计算",
+    "media": "多模态生成",
+    "data": "数据 / 运维 / BI",
+    "location": "位置与地图",
+    "code": "代码与研发协作",
+    "message": "消息推送",
+    "integration": "企业知识 / 协作集成",
+    "system": "系统"
+  },
+  "tools": [
+    {
+      "key": "search_local_knowledgebase",
+      "title": "本地知识库检索",
+      "icon": "library_books",
+      "category": "rag",
+      "summary": "基于向量库的本地知识检索 RAG",
+      "description": "从察元已建好的本地知识库中，根据用户问题做语义检索，Top-K 文档会被拼入 Prompt 一起交给 LLM，兼顾答案准确性与可追溯来源。适合：企业私域文档问答、产品手册问答、规范性资料查询。",
+      "tags": ["检索", "RAG", "本地", "知识库", "langchain"],
+      "docs_url": "",
+      "fields": [
+        {"path": "top_k", "label": "召回数量 top_k", "widget": "number", "min": 1, "max": 50, "step": 1, "default": 3, "help": "每次检索返回的相关片段数量，越大召回越全但噪声也多。"},
+        {"path": "score_threshold", "label": "相似度阈值", "widget": "number", "min": 0.0, "max": 2.0, "step": 0.05, "default": 2.0, "help": "小于此相似度的文档会被过滤掉（距离度量，越小越相似）。"},
+        {"path": "conclude_prompt.with_result", "label": "命中时 Prompt 模板", "widget": "textarea", "help": "使用 jinja2 语法：{{ context }} / {{ question }}。"},
+        {"path": "conclude_prompt.without_result", "label": "未命中时 Prompt 模板", "widget": "textarea", "help": "检索未命中时使用的提示词。"}
+      ],
+      "defaults": {
+        "use": false,
+        "top_k": 3,
+        "score_threshold": 2.0,
+        "conclude_prompt": {
+          "with_result": "<指令>根据已知信息，简洁和专业的来回答问题。如果无法从中得到答案，请说 \"根据已知信息无法回答该问题\"，不允许在答案中添加编造成分，答案请使用中文。</指令>\n<已知信息>{{ context }}</已知信息>\n<问题>{{ question }}</问题>\n",
+          "without_result": "请你根据我的提问回答我的问题:\n{{ question }}\n请注意，你必须在回答结束后强调，你的回答是根据你的经验回答而不是参考资料回答的。\n"
+        }
+      }
+    },
+    {
+      "key": "search_internet",
+      "title": "联网搜索",
+      "icon": "travel_explore",
+      "category": "web",
+      "summary": "Bing / DuckDuckGo / Tavily / Serper / SearxNG / Metaphor",
+      "description": "调用主流公共搜索引擎做互联网检索，再把摘要拼入 Prompt。推荐配置：国内自建走 SearxNG；需要英文高质量结果用 Serper（Google）；做 AI 原生摘要用 Tavily（LangChain 官方主推）。核心价值：弥补大模型的知识时效性短板。",
+      "tags": ["搜索", "网络", "Bing", "Tavily", "Serper", "langchain"],
+      "docs_url": "https://python.langchain.com/docs/integrations/tools/",
+      "fields": [
+        {"path": "search_engine_name", "label": "搜索引擎", "widget": "select", "choices": ["bing", "duckduckgo", "tavily", "serper", "metaphor", "searx"], "default": "duckduckgo"},
+        {"path": "top_k", "label": "召回数量 top_k", "widget": "number", "min": 1, "max": 50, "step": 1, "default": 5},
+        {"path": "search_engine_config.bing.bing_search_url", "label": "Bing API URL", "widget": "text", "placeholder": "https://api.bing.microsoft.com/v7.0/search"},
+        {"path": "search_engine_config.bing.bing_key", "label": "Bing API Key", "widget": "password"},
+        {"path": "search_engine_config.tavily.api_key", "label": "Tavily API Key", "widget": "password", "help": "在 https://tavily.com 免费注册获取"},
+        {"path": "search_engine_config.tavily.search_depth", "label": "Tavily 深度", "widget": "select", "choices": ["basic", "advanced"], "default": "basic"},
+        {"path": "search_engine_config.serper.api_key", "label": "Serper API Key", "widget": "password", "help": "在 https://serper.dev 免费注册获取 Google Search 代理 Key"},
+        {"path": "search_engine_config.serper.hl", "label": "Serper 语言", "widget": "text", "placeholder": "zh-cn"},
+        {"path": "search_engine_config.serper.gl", "label": "Serper 地区", "widget": "text", "placeholder": "us"},
+        {"path": "search_engine_config.metaphor.metaphor_api_key", "label": "Metaphor Key", "widget": "password"},
+        {"path": "search_engine_config.searx.host", "label": "SearxNG host", "widget": "text", "placeholder": "https://metasearx.com"},
+        {"path": "search_engine_config.searx.language", "label": "SearxNG 语言", "widget": "text", "placeholder": "zh-CN"},
+        {"path": "conclude_prompt", "label": "结果汇总 Prompt", "widget": "textarea", "help": "把联网搜索结果拼给 LLM 的模板，使用 jinja2：{{ context }} / {{ question }}。"}
+      ],
+      "defaults": {
+        "use": false,
+        "search_engine_name": "duckduckgo",
+        "search_engine_config": {
+          "bing": {"bing_search_url": "https://api.bing.microsoft.com/v7.0/search", "bing_key": ""},
+          "duckduckgo": {},
+          "tavily": {"api_key": "", "search_depth": "basic", "include_answer": false, "include_raw_content": false},
+          "serper": {"api_key": "", "gl": "us", "hl": "zh-cn", "type": "search"},
+          "metaphor": {"metaphor_api_key": "", "split_result": false, "chunk_size": 500, "chunk_overlap": 0},
+          "searx": {"host": "https://metasearx.com", "engines": [], "categories": [], "language": "zh-CN"}
+        },
+        "top_k": 5,
+        "conclude_prompt": "<指令>这是搜索到的互联网信息，请你根据这些信息进行提取并有调理，简洁的回答问题。如果无法从中得到答案，请说 \"无法搜索到能回答问题的内容\"。</指令>\n<已知信息>{{ context }}</已知信息>\n<问题>\n{{ question }}\n</问题>\n"
+      }
+    },
+    {
+      "key": "url_reader",
+      "title": "URL 内容阅读",
+      "icon": "article",
+      "category": "web",
+      "summary": "抓取网页正文并摘要",
+      "description": "通过 https://r.jina.ai/ 反代获取目标 URL 的正文纯文本，交给 LLM 做总结 / 提取要点；让 LLM 可以「点开一个链接」。适合：论坛长帖总结、博客阅读、新闻摘要。",
+      "tags": ["网页", "抓取", "Jina"],
+      "docs_url": "https://r.jina.ai/",
+      "fields": [
+        {"path": "timeout", "label": "超时（毫秒）", "widget": "text", "placeholder": "10000", "default": "10000"}
+      ],
+      "defaults": {"use": false, "timeout": "10000"}
+    },
+    {
+      "key": "arxiv",
+      "title": "arXiv 论文检索",
+      "icon": "science",
+      "category": "rag",
+      "summary": "查询 arXiv 论文摘要与元数据",
+      "description": "根据用户问题搜索 arXiv 论文，拉取题目、摘要、作者等返回给 LLM；适合学术写作、paper 阅读辅助、文献综述场景。无需 API Key。",
+      "tags": ["学术", "论文", "arXiv"],
+      "docs_url": "https://arxiv.org/",
+      "fields": [],
+      "defaults": {"use": false}
+    },
+    {
+      "key": "wikipedia_search",
+      "title": "维基百科搜索",
+      "icon": "menu_book",
+      "category": "rag",
+      "summary": "Wikipedia 百科词条检索",
+      "description": "按关键词搜索 Wikipedia 词条，抓取摘要返回给 LLM；对通用知识、人物/地点/事件类问答非常有用。国内部署需要可访问 wikipedia.org。",
+      "tags": ["百科", "Wikipedia"],
+      "docs_url": "https://www.wikipedia.org/",
+      "fields": [],
+      "defaults": {"use": false}
+    },
+    {
+      "key": "search_youtube",
+      "title": "YouTube 视频搜索",
+      "icon": "smart_display",
+      "category": "web",
+      "summary": "检索 YouTube 相关视频",
+      "description": "按关键字搜索 YouTube 视频，返回标题 / 作者 / 时长 / 链接给 LLM；需要可访问 YouTube 的网络环境。适合：视频推荐、教程查找。",
+      "tags": ["视频", "YouTube"],
+      "docs_url": "https://developers.google.com/youtube/v3",
+      "fields": [],
+      "defaults": {"use": false}
+    },
+    {
+      "key": "calculate",
+      "title": "数学计算（numexpr）",
+      "icon": "calculate",
+      "category": "math",
+      "summary": "本地执行数值表达式",
+      "description": "基于 numexpr 在本地做纯数值计算（加减乘除、幂、三角、对数等），速度快且无网络依赖；给 LLM 的「心算」兜底，避免大模型算错数。",
+      "tags": ["数学", "numexpr"],
+      "docs_url": "",
+      "fields": [],
+      "defaults": {"use": false}
+    },
+    {
+      "key": "wolfram",
+      "title": "Wolfram Alpha",
+      "icon": "functions",
+      "category": "math",
+      "summary": "自然语言数学 / 科学计算",
+      "description": "调用 Wolfram Alpha 做单位换算、方程求解、科学常量查询、公式推导等复杂计算；英文题干效果更好。需要在官网申请免费 AppID。",
+      "tags": ["数学", "科学", "Wolfram"],
+      "docs_url": "https://developer.wolframalpha.com/",
+      "fields": [
+        {"path": "appid", "label": "AppID", "widget": "password"}
+      ],
+      "defaults": {"use": false, "appid": ""}
+    },
+    {
+      "key": "weather_check",
+      "title": "心知天气",
+      "icon": "cloud",
+      "category": "web",
+      "summary": "心知天气 API（seniverse）",
+      "description": "调用心知天气获取指定城市的实况、未来天气与空气质量等；免费额度足够个人日常使用。官网注册后即可获取 API Key。",
+      "tags": ["天气", "Seniverse"],
+      "docs_url": "https://www.seniverse.com/",
+      "fields": [
+        {"path": "api_key", "label": "API Key", "widget": "password"}
+      ],
+      "defaults": {"use": false, "api_key": ""}
+    },
+    {
+      "key": "amap",
+      "title": "高德地图",
+      "icon": "map",
+      "category": "location",
+      "summary": "POI 搜索 / 路径规划 / 天气",
+      "description": "高德 Web 服务 API：地点搜索、路径规划、行政区查询、天气等；单 Key 同时服务「高德 POI 搜索」和「高德天气」两个子工具。需要在高德开放平台申请 Key。",
+      "tags": ["地图", "POI", "高德"],
+      "docs_url": "https://lbs.amap.com/",
+      "register_as": ["amap_poi_search", "amap_weather"],
+      "fields": [
+        {"path": "api_key", "label": "API Key", "widget": "password"}
+      ],
+      "defaults": {"use": false, "api_key": ""}
+    },
+    {
+      "key": "text2images",
+      "title": "文生图（text2images）",
+      "icon": "image",
+      "category": "media",
+      "summary": "按用户描述生成图片",
+      "description": "调用「模型配置」页里注册过的图像生成模型（text2image 类型）根据用户 prompt 产出图片。下方「图像模型」下拉会自动列出当前可用的 text2image 模型。不同平台对尺寸字符串接受度不同（1024x1024 / 1024*1024 等）。",
+      "tags": ["图像", "生成", "多模态"],
+      "docs_url": "",
+      "fields": [
+        {"path": "model", "label": "图像模型", "widget": "model_select", "model_type": "text2image", "help": "必须是 model_settings.yaml/MODEL_PLATFORMS 中已注册的 text2image 模型。"},
+        {"path": "size", "label": "图片尺寸", "widget": "text", "placeholder": "1024*1024", "help": "不同平台接受的尺寸字符串略有差异。"}
+      ],
+      "defaults": {"use": false, "model": "", "size": "1024*1024"}
+    },
+    {
+      "key": "text2sql",
+      "title": "自然语言转 SQL",
+      "icon": "storage",
+      "category": "data",
+      "summary": "把用户问题翻译为 SQL 并查库",
+      "description": "LLM 读取库表结构后，把用户自然语言转为 SQL 并执行返回结果。生产环境建议：① 连从库；② 打开 read_only；③ 配置 table_comments 帮 LLM 理解语义；④ 慢查询限制。",
+      "tags": ["数据库", "SQL", "BI"],
+      "docs_url": "",
+      "fields": [
+        {"path": "model_name", "label": "使用的 LLM", "widget": "text", "help": "建议填写 model_settings.yaml 中 llm_models 里的名称。"},
+        {"path": "sqlalchemy_connect_str", "label": "数据库 URI", "widget": "text", "placeholder": "mysql+pymysql://user:pass@host:port/db"},
+        {"path": "read_only", "label": "只读模式", "widget": "switch", "help": "开启后 LLM 生成的 SQL 仅允许 SELECT，强烈推荐生产打开。"},
+        {"path": "top_k", "label": "最多返回行数", "widget": "number", "min": 1, "max": 500, "step": 1, "default": 50},
+        {"path": "return_intermediate_steps", "label": "返回中间步骤", "widget": "switch"}
+      ],
+      "defaults": {
+        "use": false,
+        "model_name": "qwen-plus",
+        "sqlalchemy_connect_str": "mysql+pymysql://user:pass@host:port/db",
+        "read_only": true,
+        "top_k": 50,
+        "return_intermediate_steps": true,
+        "table_names": [],
+        "table_comments": {}
+      }
+    },
+    {
+      "key": "text2promql",
+      "title": "自然语言转 PromQL",
+      "icon": "query_stats",
+      "category": "data",
+      "summary": "把运维问题翻译为 Prometheus 查询",
+      "description": "LLM 根据用户自然语言选择合适的 metric 并转成 PromQL，再查询 Prometheus；目前仅支持单实例。适合 SRE / DevOps 的对话式告警排查。",
+      "tags": ["运维", "Prometheus", "监控"],
+      "docs_url": "",
+      "fields": [
+        {"path": "prometheus_endpoint", "label": "Prometheus Endpoint", "widget": "text", "placeholder": "http://127.0.0.1:9090"},
+        {"path": "username", "label": "用户名", "widget": "text"},
+        {"path": "password", "label": "密码", "widget": "password"}
+      ],
+      "defaults": {
+        "use": false,
+        "prometheus_endpoint": "http://127.0.0.1:9090",
+        "username": "",
+        "password": ""
+      }
+    },
+    {
+      "key": "shell",
+      "title": "Shell 命令（危险）",
+      "icon": "terminal",
+      "category": "system",
+      "summary": "让 LLM 在服务器上跑 shell",
+      "description": "允许 LLM 在部署机器上执行 shell 命令并返回结果。极度危险：任何注入或模型幻觉都可能破坏系统；生产环境请勿启用，仅供本机 / 沙箱调试。启用后请用容器 / rootless 隔离。",
+      "tags": ["Shell", "系统", "langchain"],
+      "docs_url": "",
+      "fields": [],
+      "defaults": {"use": false}
+    },
+    {
+      "key": "pubmed_search",
+      "title": "PubMed 医学文献",
+      "icon": "medication",
+      "category": "rag",
+      "summary": "NCBI PubMed 生物医学文献检索",
+      "description": "通过 NCBI Entrez E-utilities 检索 PubMed 上的医学 / 生物学论文，返回题目、摘要、作者与 DOI。完全免费，无需 API Key（建议填写邮箱，便于 NCBI 在限流时联系）。适合：医药企业对话式文献助手、临床辅助决策（CDSS）的证据检索、降低医学问答幻觉。",
+      "tags": ["医学", "文献", "PubMed", "langchain"],
+      "docs_url": "https://www.ncbi.nlm.nih.gov/books/NBK25501/",
+      "fields": [
+        {"path": "email", "label": "联系邮箱（NCBI 建议）", "widget": "text", "placeholder": "you@example.com", "help": "NCBI 在触发限流时会按此联系你；留空也能用。"},
+        {"path": "top_k", "label": "返回条数", "widget": "number", "min": 1, "max": 20, "step": 1, "default": 5},
+        {"path": "max_chars", "label": "单条最多字符数", "widget": "number", "min": 200, "max": 8000, "step": 200, "default": 2000, "help": "每篇摘要截断长度；防止把一整本综述塞给 LLM。"}
+      ],
+      "defaults": {"use": false, "email": "", "top_k": 5, "max_chars": 2000}
+    },
+    {
+      "key": "http_request",
+      "title": "HTTP 通用请求",
+      "icon": "http",
+      "category": "data",
+      "summary": "让 LLM 调任意 REST API（带白名单）",
+      "description": "把 LLM 和「任意 REST 后端」打通的万能胶水：LLM 给出 URL / method / payload，工具按 yaml 里的域名白名单访问并返回 JSON。**务必只放可被 LLM 访问的接口到 allowlist**，否则 LLM 幻觉可能引发 SSRF。适合：接入企业内部 API、第三方 SaaS REST 接口。",
+      "tags": ["HTTP", "REST", "API", "企业集成"],
+      "docs_url": "",
+      "fields": [
+        {"path": "allowlist", "label": "允许访问的 URL 前缀（每行一个）", "widget": "textarea", "placeholder": "https://api.github.com\nhttps://my-internal.example.com/api"},
+        {"path": "timeout", "label": "超时（秒）", "widget": "number", "min": 1, "max": 120, "step": 1, "default": 15},
+        {"path": "max_bytes", "label": "响应截断字节数", "widget": "number", "min": 1024, "max": 2000000, "step": 1024, "default": 200000, "help": "超出部分会被截断，避免把 MB 级响应全部喂给 LLM。"},
+        {"path": "default_headers.User-Agent", "label": "默认 User-Agent", "widget": "text", "placeholder": "chayuan-agent/1.0"}
+      ],
+      "defaults": {
+        "use": false,
+        "allowlist": [],
+        "timeout": 15,
+        "max_bytes": 200000,
+        "default_headers": {"User-Agent": "chayuan-agent/1.0"}
+      }
+    },
+    {
+      "key": "openweather",
+      "title": "OpenWeatherMap 天气",
+      "icon": "thermostat",
+      "category": "web",
+      "summary": "全球覆盖的天气查询（心知海外替代）",
+      "description": "国内用心知天气、海外部署建议 OpenWeatherMap。免费 tier 每天 1000 次调用，覆盖 200 多个国家。申请 Key：https://openweathermap.org/api",
+      "tags": ["天气", "海外", "langchain"],
+      "docs_url": "https://openweathermap.org/api",
+      "required_imports": ["pyowm"],
+      "extras": "tools-weather",
+      "required_config": ["api_key"],
+      "fields": [
+        {"path": "api_key", "label": "API Key", "widget": "password"}
+      ],
+      "defaults": {"use": false, "api_key": ""}
+    },
+    {
+      "key": "yahoo_finance_news",
+      "title": "Yahoo 财经新闻",
+      "icon": "attach_money",
+      "category": "data",
+      "summary": "按股票代码拉取近期财经新闻",
+      "description": "传入股票代码（如 AAPL / TSLA / 00700.HK）返回近期新闻摘要。需要 pip install yfinance；免费、无需 Key。",
+      "tags": ["金融", "股票", "Yahoo", "langchain"],
+      "docs_url": "https://pypi.org/project/yfinance/",
+      "required_imports": ["yfinance"],
+      "extras": "tools-finance",
+      "fields": [],
+      "defaults": {"use": false}
+    },
+    {
+      "key": "semantic_scholar",
+      "title": "Semantic Scholar 学术",
+      "icon": "auto_stories",
+      "category": "rag",
+      "summary": "覆盖比 arXiv 更广的学术文献搜索",
+      "description": "Semantic Scholar 收录 200M+ 篇论文，涵盖 ACM / IEEE / PubMed 等，适合跨学科综述。免费，无需 API Key。需要 pip install semanticscholar。",
+      "tags": ["学术", "文献", "Semantic Scholar", "langchain"],
+      "docs_url": "https://api.semanticscholar.org/",
+      "required_imports": ["semanticscholar"],
+      "extras": "tools-academic",
+      "fields": [
+        {"path": "top_k", "label": "返回条数", "widget": "number", "min": 1, "max": 20, "step": 1, "default": 5}
+      ],
+      "defaults": {"use": false, "top_k": 5}
+    },
+    {
+      "key": "stackexchange",
+      "title": "StackExchange 编程问答",
+      "icon": "quiz",
+      "category": "code",
+      "summary": "检索 StackOverflow / ServerFault 高票答案",
+      "description": "覆盖 StackOverflow / ServerFault / AskUbuntu 等 170+ 站点，返回匹配的问题与高票答案片段；免费（建议后续注册 API Key 扩大配额）。需要 pip install stackapi。",
+      "tags": ["编程", "Q&A", "StackOverflow", "langchain"],
+      "docs_url": "https://api.stackexchange.com/docs",
+      "required_imports": ["stackapi"],
+      "extras": "tools-code",
+      "fields": [
+        {"path": "max_results", "label": "返回条数", "widget": "number", "min": 1, "max": 20, "step": 1, "default": 3},
+        {"path": "query_type", "label": "类型", "widget": "select", "choices": ["all", "title", "body"], "default": "all"}
+      ],
+      "defaults": {"use": false, "max_results": 3, "query_type": "all"}
+    },
+    {
+      "key": "news_api",
+      "title": "NewsAPI 新闻",
+      "icon": "newspaper",
+      "category": "data",
+      "summary": "newsapi.org 聚合 150K+ 新闻源",
+      "description": "支持按关键词 / 国家 / 分类过滤，默认返回近期头条。适合：行业资讯 Agent、每日简报生成。免费开发者 tier 每天 100 次。",
+      "tags": ["新闻", "资讯", "NewsAPI"],
+      "docs_url": "https://newsapi.org/",
+      "fields": [
+        {"path": "api_key", "label": "API Key", "widget": "password"},
+        {"path": "language", "label": "语言", "widget": "text", "placeholder": "en / zh"},
+        {"path": "sort_by", "label": "排序方式", "widget": "select", "choices": ["publishedAt", "relevancy", "popularity"], "default": "publishedAt"},
+        {"path": "page_size", "label": "每次返回条数", "widget": "number", "min": 1, "max": 50, "step": 1, "default": 5}
+      ],
+      "defaults": {"use": false, "api_key": "", "language": "en", "sort_by": "publishedAt", "page_size": 5}
+    },
+    {
+      "key": "python_repl",
+      "title": "Python REPL（危险）",
+      "icon": "code",
+      "category": "code",
+      "summary": "让 LLM 执行任意 Python 代码",
+      "description": "LLM 可写 pandas / matplotlib / 调 SDK 的 Python 代码并立即执行。危险级别等同 shell：模型幻觉可能读本机文件、连数据库、发公网请求。仅建议在容器 / rootless / 断网沙箱中使用，并显式把 confirm_dangerous 设为 true 才会真正执行。需要 pip install langchain-experimental。",
+      "tags": ["Python", "REPL", "危险", "langchain"],
+      "docs_url": "",
+      "fields": [
+        {"path": "confirm_dangerous", "label": "已了解风险并确认启用", "widget": "switch", "help": "不打开就不会真正执行代码；这是一个明确的「双重确认」开关。"}
+      ],
+      "defaults": {"use": false, "confirm_dangerous": false}
+    },
+    {
+      "key": "github_tool",
+      "title": "GitHub 仓库查询",
+      "icon": "hub",
+      "category": "code",
+      "summary": "仓库 / Issue / PR / 文件只读查询",
+      "description": "用 LLM 查询任意 GitHub 仓库的 Issue / PR / 文件 / 分支；只读、无写操作，避免误删。需要 Personal Access Token（最小权限 repo:read）。需要 pip install PyGithub。",
+      "tags": ["GitHub", "仓库", "Issue", "PR", "langchain"],
+      "docs_url": "https://github.com/settings/tokens",
+      "required_imports": ["github"],
+      "extras": "tools-code",
+      "required_config": ["token"],
+      "fields": [
+        {"path": "token", "label": "GitHub Token", "widget": "password"}
+      ],
+      "defaults": {"use": false, "token": ""}
+    },
+    {
+      "key": "gitlab_tool",
+      "title": "GitLab 仓库查询",
+      "icon": "account_tree",
+      "category": "code",
+      "summary": "支持自建 GitLab 的只读查询",
+      "description": "国内企业内部多用 GitLab。支持 url 指向自建实例；能查 Issue / MR / 文件 / 分支。需要 Personal Access Token（至少 read_api）。需要 pip install python-gitlab。",
+      "tags": ["GitLab", "仓库", "MR", "企业"],
+      "docs_url": "https://docs.gitlab.com/ee/api/",
+      "required_imports": ["gitlab"],
+      "extras": "tools-code",
+      "required_config": ["token"],
+      "fields": [
+        {"path": "url", "label": "GitLab 实例 URL", "widget": "text", "placeholder": "https://gitlab.com"},
+        {"path": "token", "label": "Personal Access Token", "widget": "password"}
+      ],
+      "defaults": {"use": false, "url": "https://gitlab.com", "token": ""}
+    },
+    {
+      "key": "lark_message",
+      "title": "飞书消息推送",
+      "icon": "forum",
+      "category": "message",
+      "summary": "飞书群机器人 Webhook",
+      "description": "把 Agent 产出的总结 / 告警 / 日报推到飞书群。走自定义机器人 Webhook，无 SDK 依赖；mention 可填 all 或 user_id。",
+      "tags": ["飞书", "Lark", "消息", "Webhook"],
+      "docs_url": "https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot",
+      "required_config": ["webhook"],
+      "fields": [
+        {"path": "webhook", "label": "Webhook URL", "widget": "password", "help": "群聊 → 群设置 → 群机器人 → 添加自定义机器人"},
+        {"path": "default_mention", "label": "默认艾特（可选）", "widget": "text", "placeholder": "all 或 user_id"}
+      ],
+      "defaults": {"use": false, "webhook": "", "default_mention": ""}
+    },
+    {
+      "key": "wechat_work_message",
+      "title": "企业微信消息推送",
+      "icon": "forum",
+      "category": "message",
+      "summary": "企业微信群机器人 Webhook",
+      "description": "把 Agent 消息推送到企业微信群聊。支持 text / markdown 两种类型；text 下可 @ 手机号（需要成员在群内）。",
+      "tags": ["企业微信", "Webhook", "消息"],
+      "docs_url": "https://developer.work.weixin.qq.com/document/path/91770",
+      "required_config": ["webhook"],
+      "fields": [
+        {"path": "webhook", "label": "Webhook URL", "widget": "password"},
+        {"path": "msgtype", "label": "默认消息类型", "widget": "select", "choices": ["text", "markdown"], "default": "text"}
+      ],
+      "defaults": {"use": false, "webhook": "", "msgtype": "text"}
+    },
+    {
+      "key": "dingtalk_message",
+      "title": "钉钉消息推送",
+      "icon": "forum",
+      "category": "message",
+      "summary": "钉钉自定义机器人 Webhook（支持加签）",
+      "description": "推消息到钉钉群。若机器人开启「加签」安全模式，填上 secret 自动做 HMAC-SHA256；text / markdown 两种 msgtype，支持艾特手机号或全体。",
+      "tags": ["钉钉", "DingTalk", "Webhook", "消息"],
+      "docs_url": "https://open.dingtalk.com/document/robots/custom-robot-access",
+      "required_config": ["webhook"],
+      "fields": [
+        {"path": "webhook", "label": "Webhook URL", "widget": "password"},
+        {"path": "secret", "label": "加签 secret（可选）", "widget": "password", "help": "仅当机器人在钉钉侧开启「加签」安全设置时需要"},
+        {"path": "msgtype", "label": "默认消息类型", "widget": "select", "choices": ["text", "markdown"], "default": "text"},
+        {"path": "markdown_title", "label": "markdown 类型的标题", "widget": "text", "placeholder": "chayuan"}
+      ],
+      "defaults": {"use": false, "webhook": "", "secret": "", "msgtype": "text", "markdown_title": "chayuan"}
+    },
+    {
+      "key": "openapi_call",
+      "title": "OpenAPI 动态调用",
+      "icon": "api",
+      "category": "integration",
+      "summary": "按 operationId 在运行时调用任意 OpenAPI 接口",
+      "description": "给一份 OpenAPI（Swagger）JSON spec，LLM 可用 list_operations 看所有可调接口、再用 call 按 operationId 带参数调用。相比把每个 operation 展开成独立工具的做法更省 token，也更便于运维更新。",
+      "tags": ["OpenAPI", "Swagger", "集成"],
+      "docs_url": "https://swagger.io/specification/",
+      "required_config": ["spec_url"],
+      "fields": [
+        {"path": "spec_url", "label": "OpenAPI JSON URL 或本地路径", "widget": "text", "placeholder": "https://petstore.swagger.io/v2/swagger.json"},
+        {"path": "base_url", "label": "基础 URL（spec 未写时用）", "widget": "text"},
+        {"path": "timeout", "label": "超时（秒）", "widget": "number", "min": 1, "max": 120, "step": 1, "default": 15},
+        {"path": "default_headers.Authorization", "label": "默认 Authorization", "widget": "password", "placeholder": "Bearer xxx"}
+      ],
+      "defaults": {
+        "use": false,
+        "spec_url": "",
+        "base_url": "",
+        "timeout": 15,
+        "default_headers": {"Authorization": ""},
+        "max_chars": 20000
+      }
+    },
+    {
+      "key": "notion_search",
+      "title": "Notion 搜索",
+      "icon": "sticky_note_2",
+      "category": "integration",
+      "summary": "Notion 官方 Search API",
+      "description": "用一个 internal integration token 搜索 Notion workspace 里的 Page 与 Database。适合：把企业/团队在 Notion 上的文档当做可被对话检索的知识源。建立 integration 时记得把要访问的 Page 分享给这个 integration。",
+      "tags": ["Notion", "笔记", "企业"],
+      "docs_url": "https://developers.notion.com/reference/post-search",
+      "fields": [
+        {"path": "token", "label": "Integration Token", "widget": "password"},
+        {"path": "api_version", "label": "API Version", "widget": "text", "placeholder": "2022-06-28"},
+        {"path": "page_size", "label": "返回条数", "widget": "number", "min": 1, "max": 30, "step": 1, "default": 5}
+      ],
+      "defaults": {"use": false, "token": "", "api_version": "2022-06-28", "page_size": 5}
+    },
+    {
+      "key": "confluence_search",
+      "title": "Confluence 搜索",
+      "icon": "menu_book",
+      "category": "integration",
+      "summary": "Atlassian Confluence Cloud / 自建 CQL 搜索",
+      "description": "用 CQL（Confluence Query Language）查企业内部的 Confluence 空间。Cloud 版填 email + api_token；自建版填 username + password/PAT。需要 pip install atlassian-python-api。",
+      "tags": ["Confluence", "Atlassian", "企业 Wiki"],
+      "docs_url": "https://developer.atlassian.com/cloud/confluence/rest/",
+      "required_imports": ["atlassian"],
+      "extras": "tools-enterprise",
+      "required_config": ["url"],
+      "fields": [
+        {"path": "url", "label": "Confluence URL", "widget": "text", "placeholder": "https://your.atlassian.net/wiki"},
+        {"path": "cloud", "label": "是否 Cloud 版本", "widget": "switch"},
+        {"path": "email", "label": "Cloud 登录邮箱 / 用户名", "widget": "text"},
+        {"path": "api_token", "label": "API Token（Cloud）", "widget": "password"},
+        {"path": "username", "label": "自建用户名", "widget": "text"},
+        {"path": "password", "label": "自建密码 / PAT", "widget": "password"},
+        {"path": "limit", "label": "返回条数", "widget": "number", "min": 1, "max": 30, "step": 1, "default": 5}
+      ],
+      "defaults": {"use": false, "url": "", "cloud": true, "email": "", "api_token": "", "username": "", "password": "", "limit": 5}
+    }
+  ]
+}

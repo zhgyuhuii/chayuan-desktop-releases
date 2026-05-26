@@ -1,0 +1,26 @@
+[project]
+name = "chayuan-runtime"
+version = "0.1.0"
+description = "Runtime adapters: Ollama / Infinity / vLLM / llama.cpp / ComfyUI / FunASR / piper / RapidOCR"
+requires-python = ">=3.10"
+dependencies = ["chayuan-core", "chayuan-registry", "httpx>=0.27", "pydantic>=2.5"]
+
+[project.entry-points."chayuan.runtime_adapters"]
+ollama       = "chayuan_runtime.adapters.ollama_adapter:OllamaAdapter"
+infinity     = "chayuan_runtime.adapters.infinity_adapter:InfinityAdapter"
+llamacpp     = "chayuan_runtime.adapters.llamacpp_adapter:LlamaCppAdapter"
+vllm         = "chayuan_runtime.adapters.vllm_adapter:VllmAdapter"
+whispercpp   = "chayuan_runtime.adapters.whispercpp_adapter:WhisperCppAdapter"
+funasr       = "chayuan_runtime.adapters.funasr_adapter:FunAsrAdapter"
+piper        = "chayuan_runtime.adapters.piper_adapter:PiperAdapter"
+cosyvoice    = "chayuan_runtime.adapters.cosyvoice_adapter:CosyVoiceAdapter"
+rapidocr     = "chayuan_runtime.adapters.rapidocr_adapter:RapidOcrAdapter"
+paddleocr    = "chayuan_runtime.adapters.paddleocr_adapter:PaddleOcrAdapter"
+comfyui      = "chayuan_runtime.adapters.comfyui_adapter:ComfyUIAdapter"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/chayuan_runtime"]

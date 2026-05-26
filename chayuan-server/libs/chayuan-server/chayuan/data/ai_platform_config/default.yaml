@@ -1,0 +1,31 @@
+# Default app config. Loaded by chayuan_core.config.load_config().
+# Anything here is overridden by CHAYUAN_<SECTION>_<KEY> env vars.
+
+log_level: INFO
+
+gateway:
+  host: 127.0.0.1
+  port: 38080
+  api_keys:
+    - sk-chayuan-dev
+  cors_origins:
+    - "*"
+  rate_limit_qpm: 600
+
+discovery:
+  poll_interval_sec: 60
+  debounce_ms: 500
+  enabled: true
+
+mirrors:
+  primary: https://hf-mirror.com
+  fallback:
+    - https://huggingface.co
+  modelscope: https://www.modelscope.cn
+
+supervisor:
+  # Range used for ALL allocations (preferred + fallback). Wide enough that
+  # uncommon defaults like 35432 / 36379 / 39000 / 39530 fit.
+  port_range: [16000, 65000]
+  max_restarts: 5
+  restart_backoff_base_sec: 1.0

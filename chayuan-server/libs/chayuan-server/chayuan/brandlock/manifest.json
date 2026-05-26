@@ -1,0 +1,58 @@
+{
+  "files": [
+    {
+      "rel_path": "img/logo.png",
+      "sha256": "9687d4582f7fe3626e412137937197dfe8f49751b4d45ea0364f531e3d5124fc",
+      "size": 359681
+    },
+    {
+      "rel_path": "img/logo_name.png",
+      "sha256": "8c1b7ab05dbbe6ff918c26fae039e28d3c2837161009013d24c3173a6441a8a9",
+      "size": 186065
+    },
+    {
+      "rel_path": "init_wizard.py",
+      "sha256": "ade5959a354cfca3bbd5cd4243ffb0caadd931a937cc6174e15bca4bc2d586e0",
+      "size": 18166
+    },
+    {
+      "rel_path": "startup.py",
+      "sha256": "c70dfd3b27a4f1eb94b700251f47debf02375356ec76a598cf99d8831d63c5ef",
+      "size": 41433
+    },
+    {
+      "rel_path": "cli.py",
+      "sha256": "030a8ff2b0f98821065be2fb6f15585434e66510239b79af288c376ffd12007a",
+      "size": 29827
+    },
+    {
+      "rel_path": "brandlock/__init__.py",
+      "sha256": "0e2d5a78cdacecde7dfb2649ca8f7077b757dbf147bf0a238e54a0922af6acc2",
+      "size": 2102
+    },
+    {
+      "rel_path": "brandlock/_verifier.py",
+      "sha256": "a40ccea4c9d96d63ca927e25534169fadd01e6d63ba7360db93d854c197c2f93",
+      "size": 6878
+    },
+    {
+      "rel_path": "brandlock/_canary.py",
+      "sha256": "4ff86e3365c5e78dd543b3fe421970b772f5291bf2e08f57e4b2c5688a3ea0d8",
+      "size": 2578
+    },
+    {
+      "rel_path": "brandlock/_evidence.py",
+      "sha256": "e3838e66e3574d9e92315f6678c6034c03a2f2643a3e80934fde9d11fd6b807b",
+      "size": 3256
+    },
+    {
+      "rel_path": "brandlock/_manifest.py",
+      "sha256": "769b1a1b69a5a9ac5e83dafab9ba54926f54c8e92fd86a3c9f28c5086d65809e",
+      "size": 9292
+    }
+  ],
+  "issued_at": "2026-05-04T04:21:45.136589Z",
+  "product": "chayuan",
+  "signature_hex": "",
+  "version": "1.0"
+}

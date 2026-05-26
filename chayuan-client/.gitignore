@@ -1,0 +1,30 @@
+node_modules
+dist
+build
+.turbo
+.cache
+.next
+.parcel-cache
+coverage
+playwright-report
+test-results
+
+# env
+.env
+.env.*
+!.env.example
+
+# tauri
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/Cargo.lock
+
+# os
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.log
+*.tsbuildinfo

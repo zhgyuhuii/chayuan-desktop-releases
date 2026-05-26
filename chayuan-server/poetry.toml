@@ -1,0 +1,6 @@
+[virtualenvs]
+in-project = true
+
+[plugins.pypi_mirror]
+# 与 libs/chayuan-server/pyproject.toml 中 [[tool.poetry.source]] 一致；内网可改为 Nexus
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"

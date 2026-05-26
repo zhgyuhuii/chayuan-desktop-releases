@@ -1,0 +1,18 @@
+# User-extensible identification rules. Hot-reloaded every 60s by discovery.
+# Built-in rules (under chayuan_identify.signatures) are always merged AFTER these.
+#
+# Add a rule when a model family isn't recognised by the defaults.
+
+rules:
+  - name: example-custom-llm
+    category: chat
+    runtime: vllm
+    format: safetensors
+    config_arch: ["MyCustomLMForCausalLM"]
+    pipeline_tag: ["text-generation"]
+
+  - name: senseVoice
+    category: asr
+    runtime: funasr
+    format: onnx
+    files: ["am.mvn", "config.yaml"]

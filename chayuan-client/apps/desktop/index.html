@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>察元 AI</title>
+
+    <!--
+      启动 splash —— 多层零延迟方案:
+        1. Tauri windows.backgroundColor=#0f172a   → OS 窗口创建瞬间就是深色,无白屏闪
+        2. <head> 内联 ``html, body { background: #0f172a }`` → HTML 解析到 head 就生效
+        3. <head> 内联 splash 的 CSS                → body 解析时样式已就绪,首帧就出动画
+        4. <body> 第一个元素 (#chayuan-splash)      → 与 #app 平级,DOM 解析到就立刻渲染
+        5. main.tsx 在 createRoot 之前主动 remove   → React UI 出现时同步淡出,避免闪烁
+
+      整套思路对齐业内 Electron / Tauri 桌面应用最佳实践
+      (VSCode / Linear / Figma Desktop / Slack 等)。
+    -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c3aed'/%3E%3Cstop offset='1' stop-color='%234f46e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='50%25' y='58%25' font-family='PingFang SC,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3E察%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      /* 第 2 层:html / body 背景 — 必须在 head 里设,才能在 head 解析完的瞬间生效。
+         之前放在 body 里的 style 是次优,首次绘制还是会闪默认白底。
+         注意:**只**在 html 上声明 splash 期间用的深色背景与默认字体;
+         body 不写 background / color,留给 Tailwind `@layer base` 在 bundle
+         加载完后接管(否则 inline 样式优先级压过 layer,浅色主题下 body
+         文字色被锁成 #e2e8f0,所有 <input>/<textarea> 的输入字符灰白看不清)。 */
+      html {
+        background: #0f172a;
+        font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+          "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      #app { height: 100vh; width: 100vw; }
+
+      /* 第 3 层:splash 样式;键名前缀 cy- 避免与业务样式冲突;
+         只用静态值 / 关键帧动画,不依赖 Tailwind 等运行时 CSS。 */
+      #chayuan-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483646;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background:
+          radial-gradient(ellipse at center,
+            rgba(99,102,241,0.20), rgba(14,165,233,0.10) 45%, transparent 70%),
+          #0f172a;
+        opacity: 1;
+        transition: opacity 360ms ease-out;
+      }
+      /* React 接管时 main.tsx 给根加 .cy-splash-fading,360ms 后整体 remove。 */
+      #chayuan-splash.cy-splash-fading { opacity: 0; pointer-events: none; }
+
+      #chayuan-splash * { box-sizing: border-box; }
+
+      .cy-splash-ring {
+        position: absolute;
+        width: 132px; height: 132px;
+        border-radius: 50%;
+        background: conic-gradient(from 0deg, #6366f1, #06b6d4, #ec4899, #f59e0b, #6366f1);
+        animation: cy-splash-spin 2.4s linear infinite;
+        filter: blur(0.5px);
+        -webkit-mask: radial-gradient(circle, transparent 56px, black 58px, black 64px, transparent 66px);
+                mask: radial-gradient(circle, transparent 56px, black 58px, black 64px, transparent 66px);
+      }
+
+      .cy-splash-orbits { position: absolute; animation: cy-splash-spin-rev 3.8s linear infinite; }
+      .cy-splash-orbit { position: absolute; display: block; border-radius: 50%; }
+      .cy-splash-o1 {
+        width: 10px; height: 10px; background: #6366f1;
+        box-shadow: 0 0 12px #6366f1, 0 0 22px rgba(99,102,241,0.55);
+        animation: cy-splash-orbit-1 2.2s linear infinite;
+      }
+      .cy-splash-o2 {
+        width: 8px; height: 8px; background: #06b6d4;
+        box-shadow: 0 0 10px #06b6d4, 0 0 20px rgba(6,182,212,0.55);
+        animation: cy-splash-orbit-2 2.8s linear infinite;
+      }
+      .cy-splash-o3 {
+        width: 7px; height: 7px; background: #ec4899;
+        box-shadow: 0 0 10px #ec4899, 0 0 20px rgba(236,72,153,0.55);
+        animation: cy-splash-orbit-3 3.4s linear infinite;
+      }
+
+      .cy-splash-core {
+        position: relative;
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+        width: 56px; height: 56px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #a5b4fc, #6366f1 60%, #4338ca);
+        box-shadow: 0 0 24px rgba(99,102,241,0.55), inset 0 0 12px rgba(255,255,255,0.35);
+        animation: cy-splash-pulse 1.6s ease-in-out infinite;
+      }
+      .cy-splash-shimmer {
+        position: absolute; top: 0; bottom: 0; width: 60%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+        animation: cy-splash-shimmer 1.8s ease-in-out infinite;
+        filter: blur(2px);
+      }
+
+      .cy-splash-tag {
+        position: absolute;
+        bottom: 8vh; left: 0; right: 0;
+        text-align: center;
+        font-size: 13px; font-weight: 500; line-height: 1.6;
+        color: rgba(226,232,240,0.85);
+        letter-spacing: 0.06em;
+      }
+      .cy-splash-tag-sub {
+        margin-top: 6px;
+        font-size: 11px;
+        color: rgba(148,163,184,0.85);
+      }
+
+      @keyframes cy-splash-spin     { to { transform: rotate(360deg); } }
+      @keyframes cy-splash-spin-rev { to { transform: rotate(-360deg); } }
+      @keyframes cy-splash-pulse {
+        0%,100% { transform: scale(1);    opacity: .85; }
+        50%     { transform: scale(1.18); opacity: 1; }
+      }
+      @keyframes cy-splash-orbit-1 {
+        from { transform: rotate(0deg)   translateX(28px) rotate(0deg); }
+        to   { transform: rotate(360deg) translateX(28px) rotate(-360deg); }
+      }
+      @keyframes cy-splash-orbit-2 {
+        from { transform: rotate(120deg) translateX(40px) rotate(-120deg); }
+        to   { transform: rotate(480deg) translateX(40px) rotate(-480deg); }
+      }
+      @keyframes cy-splash-orbit-3 {
+        from { transform: rotate(240deg) translateX(34px) rotate(-240deg); }
+        to   { transform: rotate(600deg) translateX(34px) rotate(-600deg); }
+      }
+      @keyframes cy-splash-shimmer {
+        0%   { transform: translateX(-120%); }
+        100% { transform: translateX( 120%); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- splash 必须放在 ``<div id="app">`` 之前 —— Tauri WebView 增量绘制时,
+         如果 #app(100vh×100vw)先进 DOM,会先画一帧空 #app,下一帧才把 splash
+         叠上,中间有可见的"空白瞬态";splash 抢先入 DOM,首帧就是动画。
+         React 通过 ``getElementById('app')`` 拿挂载点,与 DOM 顺序无关。
+         splash 自己用 position:fixed 盖满全窗,与 #app 同级 sibling。 -->
+    <div id="chayuan-splash" aria-busy="true" aria-live="polite">
+      <div class="cy-splash-ring"></div>
+      <div class="cy-splash-orbits">
+        <span class="cy-splash-orbit cy-splash-o1"></span>
+        <span class="cy-splash-orbit cy-splash-o2"></span>
+        <span class="cy-splash-orbit cy-splash-o3"></span>
+      </div>
+      <div class="cy-splash-core">
+        <span class="cy-splash-shimmer"></span>
+      </div>
+      <div class="cy-splash-tag">
+        察元 AI
+        <div class="cy-splash-tag-sub">正在加载…</div>
+      </div>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

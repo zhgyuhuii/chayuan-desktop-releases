@@ -1,0 +1,29 @@
+{
+  "name": "@chayuan/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "preview": "vite preview --port 5173",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@chayuan/app": "workspace:*",
+    "@chayuan/platform-shared": "workspace:*",
+    "@chayuan/platform-web": "workspace:*",
+    "@chayuan/ui": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0-beta.6",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0-beta.6",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}

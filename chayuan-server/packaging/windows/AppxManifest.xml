@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  察元 MSIX manifest 模板。
+
+  打包时:
+    * $VERSION$ 占位符由 build_win_arm64.ps1 自动替换为 4 段版本号
+    * Publisher 字段保持 "CN=Chayuan, O=Chayuan, C=CN" 与代码签名证书 Subject 完全一致;
+      不一致 makeappx 会拒绝
+    * runFullTrust 是必需 capability,因为察元启动时要拉子进程 (Python / postgres / redis 等)
+    * MaxVersionTested 用 22621 (Win11 22H2) 即可,新版本 Windows 自动兼容旧 manifest
+
+  打包前置:
+    * Assets/Square150x150Logo.png (150x150)
+    * Assets/Square44x44Logo.png   (44x44)
+    * Assets/Wide310x150Logo.png   (可选, 开始菜单宽磁贴)
+  这些 png 不在仓库里;由 packaging/windows/Assets/ 下的源 SVG 在 CI 阶段
+  转出 (见 packaging/windows/Assets/README.md)。
+-->
+<Package
+    xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+    xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+    IgnorableNamespaces="uap uap10 rescap">
+
+  <Identity
+      Name="dev.chayuan.Chayuan"
+      Publisher="CN=Chayuan, O=Chayuan, C=CN"
+      Version="$VERSION$"
+      ProcessorArchitecture="arm64"/>
+
+  <Properties>
+    <DisplayName>Chayuan</DisplayName>
+    <PublisherDisplayName>Chayuan</PublisherDisplayName>
+    <Logo>Assets\Square150x150Logo.png</Logo>
+    <Description>察元一体化多模态 AI 平台 (Windows arm64)</Description>
+  </Properties>
+
+  <Dependencies>
+    <!-- Win10 1809 = 17763 起含 MSIX 完整支持 -->
+    <TargetDeviceFamily Name="Windows.Desktop"
+                        MinVersion="10.0.17763.0"
+                        MaxVersionTested="10.0.22621.0"/>
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="zh-cn"/>
+    <Resource Language="en-us"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+                 Executable="chayuan.exe"
+                 EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+          DisplayName="Chayuan"
+          Description="察元一体化多模态 AI 平台"
+          BackgroundColor="transparent"
+          Square150x150Logo="Assets\Square150x150Logo.png"
+          Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+            Wide310x150Logo="Assets\Wide310x150Logo.png"
+            ShortName="Chayuan">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo"/>
+            <uap:ShowOn Tile="wide310x150Logo"/>
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- 察元拉子进程 (postgres / redis / ollama / ...) 必须 fullTrust -->
+    <rescap:Capability Name="runFullTrust"/>
+  </Capabilities>
+</Package>

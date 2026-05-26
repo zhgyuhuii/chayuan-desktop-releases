@@ -1,0 +1,282 @@
+/**
+ * 察元 CSS variables —— 浅 / 深双套 + Tailwind v4 @theme 桥接。
+ *
+ * 与 tokens.ts 镜像;变更时务必同步。
+ *
+ * 现状兼容:保留旧版语义 token(--background, --foreground, --primary 等 HSL 三元组)
+ * 给现有 ui 组件;新增 --cy-* 系命名空间,对应 tokens.ts 的设计量。
+ */
+
+/* ============================================================
+ * 兼容层 —— 与现有 packages/ui/src/styles/globals.css 同形
+ * 旧组件(Button/Input/Dialog/...) 使用这套;不要删除。
+ * ============================================================ */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 217 100% 62%;          /* 对齐 brand-500 #3D7BFF */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 217 100% 62%;
+  --radius: 0.5rem;
+}
+
+[data-theme='dark'] {
+  --background: 222 47% 9%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217 100% 70%;
+  --primary-foreground: 222 47% 11%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 63% 40%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  --ring: 217 100% 70%;
+}
+
+/* ============================================================
+ * 察元设计 Token —— --cy-* 命名空间
+ * 新组件(GlowFrame/Pill/CardGrid/UserMenu/...) 使用这套。
+ * ============================================================ */
+:root {
+  /* Brand */
+  --cy-brand-50: #EEF4FF;
+  --cy-brand-100: #D9E5FF;
+  --cy-brand-200: #B3CBFF;
+  --cy-brand-300: #7CA7FF;
+  --cy-brand-400: #4F87FF;
+  --cy-brand-500: #3D7BFF;
+  --cy-brand-600: #2563EB;
+  --cy-brand-700: #1D4ED8;
+
+  /* Ink (选中黑 pill) */
+  --cy-ink-50: #F4F4F5;
+  --cy-ink-100: #E4E4E7;
+  --cy-ink-200: #D4D4D8;
+  --cy-ink-300: #A1A1AA;
+  --cy-ink-400: #52525B;
+  --cy-ink-500: #27272A;
+  --cy-ink-600: #18181B;
+  --cy-ink-700: #0A0A0A;
+  --cy-ink-800: #000000;
+
+  /* Iris(欢迎球 / 头像) */
+  --cy-iris-from: #A78BFA;
+  --cy-iris-via: #7C3AED;
+  --cy-iris-to: #4F46E5;
+  --cy-iris-gradient: linear-gradient(135deg, var(--cy-iris-from), var(--cy-iris-via), var(--cy-iris-to));
+
+  /* Glow(Composer 外发光) */
+  --cy-glow-pink: #FFB6C1;
+  --cy-glow-blue: #7CB7FF;
+  --cy-glow-green: #86E6BE;
+  --cy-glow-composer:
+    radial-gradient(120% 200% at 0% 100%, rgba(255,182,193,0.55) 0%, transparent 50%),
+    radial-gradient(120% 200% at 100% 100%, rgba(124,183,255,0.55) 0%, transparent 50%),
+    radial-gradient(140% 200% at 50% -20%, rgba(134,230,190,0.45) 0%, transparent 55%);
+  --cy-glow-blur-sm: 16px;
+  --cy-glow-blur-md: 24px;
+  --cy-glow-blur-lg: 40px;
+
+  /* Badge */
+  --cy-badge-hot: #F97316;
+  --cy-badge-new: #10B981;
+
+  /* Surface(语义,与 hsl 兼容层并行;新组件用 --cy-surface-* 更明确) */
+  --cy-surface-base: #FFFFFF;
+  --cy-surface-1: #FAFAFB;
+  --cy-surface-2: #F4F4F6;
+  --cy-surface-3: #ECECF0;
+  --cy-surface-popover: #FFFFFF;
+  --cy-text-primary: #0A0A0A;
+  --cy-text-secondary: #52525B;
+  --cy-text-tertiary: #A1A1AA;
+  --cy-text-on-brand: #FFFFFF;
+  --cy-border-subtle: #E4E4E7;
+  --cy-border-default: #D4D4D8;
+
+  /* Semantic tones — used by GuidanceCard / Toast / inline alerts */
+  --cy-warning-50: #FFF7ED;
+  --cy-warning-100: #FFEDD5;
+  --cy-warning-500: #F97316;
+  --cy-warning-600: #EA580C;
+  --cy-warning-700: #C2410C;
+  --cy-info-50: #EFF6FF;
+  --cy-info-100: #DBEAFE;
+  --cy-info-500: #3B82F6;
+  --cy-info-600: #2563EB;
+  --cy-info-700: #1D4ED8;
+  --cy-success-50: #ECFDF5;
+  --cy-success-100: #D1FAE5;
+  --cy-success-500: #10B981;
+  --cy-success-600: #059669;
+  --cy-success-700: #047857;
+  --cy-danger-50: #FEF2F2;
+  --cy-danger-100: #FEE2E2;
+  --cy-danger-500: #EF4444;
+  --cy-danger-600: #DC2626;
+  --cy-danger-700: #B91C1C;
+
+  /* Radius */
+  --cy-radius-sm: 4px;
+  --cy-radius-md: 8px;
+  --cy-radius-lg: 12px;
+  --cy-radius-xl: 16px;
+  --cy-radius-2xl: 20px;
+  --cy-radius-3xl: 24px;
+  --cy-radius-full: 9999px;
+
+  /* Spacing(8 倍数) */
+  --cy-space-1: 4px;
+  --cy-space-2: 8px;
+  --cy-space-3: 12px;
+  --cy-space-4: 16px;
+  --cy-space-5: 20px;
+  --cy-space-6: 24px;
+  --cy-space-8: 32px;
+  --cy-space-10: 40px;
+  --cy-space-12: 48px;
+
+  /* Shadow */
+  --cy-shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.04);
+  --cy-shadow-md: 0 2px 8px 0 rgba(0,0,0,0.06);
+  --cy-shadow-lg: 0 8px 24px 0 rgba(0,0,0,0.08);
+  --cy-shadow-popover: 0 8px 32px 0 rgba(0,0,0,0.12);
+
+  /* Motion */
+  --cy-duration-fast: 120ms;
+  --cy-duration-normal: 200ms;
+  --cy-duration-slow: 320ms;
+  --cy-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --cy-easing-emphasized: cubic-bezier(0.2, 0, 0.2, 1.4);
+
+  /* Z-Index */
+  --cy-z-sticky: 10;
+  --cy-z-dropdown: 50;
+  --cy-z-modal: 100;
+  --cy-z-popover: 200;
+  --cy-z-tooltip: 300;
+  --cy-z-toast: 400;
+}
+
+[data-theme='dark'] {
+  --cy-surface-base: #0A0A0A;
+  --cy-surface-1: #131316;
+  --cy-surface-2: #1B1B20;
+  --cy-surface-3: #26262C;
+  --cy-surface-popover: #1B1B20;
+  --cy-text-primary: #FAFAFA;
+  --cy-text-secondary: #A1A1AA;
+  --cy-text-tertiary: #71717A;
+  --cy-border-subtle: #26262C;
+  --cy-border-default: #3F3F46;
+
+  /* 深色下 semantic tone 调整: 50/100 用极深背景, 500/600 略提亮 */
+  --cy-warning-50: rgba(249, 115, 22, 0.10);
+  --cy-warning-100: rgba(249, 115, 22, 0.18);
+  --cy-warning-500: #FB923C;
+  --cy-warning-600: #F97316;
+  --cy-warning-700: #EA580C;
+  --cy-info-50: rgba(59, 130, 246, 0.10);
+  --cy-info-100: rgba(59, 130, 246, 0.18);
+  --cy-info-500: #60A5FA;
+  --cy-info-600: #3B82F6;
+  --cy-info-700: #2563EB;
+  --cy-success-50: rgba(16, 185, 129, 0.10);
+  --cy-success-100: rgba(16, 185, 129, 0.18);
+  --cy-success-500: #34D399;
+  --cy-success-600: #10B981;
+  --cy-success-700: #059669;
+  --cy-danger-50: rgba(239, 68, 68, 0.10);
+  --cy-danger-100: rgba(239, 68, 68, 0.18);
+  --cy-danger-500: #F87171;
+  --cy-danger-600: #EF4444;
+  --cy-danger-700: #DC2626;
+
+  /* 深色下 brand 提亮一档 */
+  --cy-brand-500: #5B92FF;
+  --cy-brand-600: #4F87FF;
+  /* 深色下 brand-50 作为「选中 / 激活」浅底:浅色版 #EEF4FF 在深色界面会变成
+     刺眼的亮蓝块(侧栏历史对话选中项随之不跟随主题)。改用低透明度 brand 蓝着色,
+     与 --cy-info-50 等 semantic 浅底一致,叠在深色 surface 上得到柔和的蓝色高亮。 */
+  --cy-brand-50: rgba(91, 146, 255, 0.16);
+
+  /* 深色下 glow 透明度调低,避免过曝 */
+  --cy-glow-composer:
+    radial-gradient(120% 200% at 0% 100%, rgba(255,182,193,0.30) 0%, transparent 50%),
+    radial-gradient(120% 200% at 100% 100%, rgba(124,183,255,0.30) 0%, transparent 50%),
+    radial-gradient(140% 200% at 50% -20%, rgba(134,230,190,0.25) 0%, transparent 55%);
+
+  --cy-shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.30);
+  --cy-shadow-md: 0 2px 8px 0 rgba(0,0,0,0.40);
+  --cy-shadow-lg: 0 8px 24px 0 rgba(0,0,0,0.50);
+  --cy-shadow-popover: 0 8px 32px 0 rgba(0,0,0,0.60);
+}
+
+/* ============================================================
+ * Tailwind v4 @theme 桥接
+ * 保持原 ui globals.css 的 @theme 内容;新增 --cy-* 自动可在
+ * className 里以 bg-cy-brand-500 等形式使用(通过 tailwind v4 自动检测)。
+ * ============================================================ */
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* 新增 brand 调色板暴露给 Tailwind */
+  --color-cy-brand-50: var(--cy-brand-50);
+  --color-cy-brand-100: var(--cy-brand-100);
+  --color-cy-brand-200: var(--cy-brand-200);
+  --color-cy-brand-300: var(--cy-brand-300);
+  --color-cy-brand-400: var(--cy-brand-400);
+  --color-cy-brand-500: var(--cy-brand-500);
+  --color-cy-brand-600: var(--cy-brand-600);
+  --color-cy-brand-700: var(--cy-brand-700);
+  --color-cy-ink-500: var(--cy-ink-500);
+  --color-cy-ink-700: var(--cy-ink-700);
+  --color-cy-ink-800: var(--cy-ink-800);
+  --color-cy-text-primary: var(--cy-text-primary);
+  --color-cy-text-secondary: var(--cy-text-secondary);
+  --color-cy-text-tertiary: var(--cy-text-tertiary);
+  --color-cy-surface-1: var(--cy-surface-1);
+  --color-cy-surface-2: var(--cy-surface-2);
+  --color-cy-surface-3: var(--cy-surface-3);
+}

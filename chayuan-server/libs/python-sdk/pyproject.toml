@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "open_chayuan"
+version = "0.3.0.20240708"
+description = "察元AI助手服务 HTTP SDK（与 chayuan-server API 兼容）"
+authors = ["北京智灵鸟科技中心"]
+packages = [
+    {include = "open_chatcaht"}
+]
+
+
+
+[tool.poetry.dependencies]
+python = ">=3.8.1,<3.12,!=3.9.7"
+pydantic = "^2.8.2"
+openai = "^1.35.13"
+httpx = "^0.27.0"

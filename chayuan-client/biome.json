@@ -1,0 +1,49 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "ignoreUnknown": true,
+    "ignore": [
+      "**/dist",
+      "**/build",
+      "**/node_modules",
+      "**/.next",
+      "**/coverage",
+      "**/playwright-report",
+      "packages/api/generated",
+      "apps/desktop/src-tauri/target",
+      "server"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always",
+      "trailingCommas": "all",
+      "arrowParentheses": "always",
+      "jsxQuoteStyle": "double"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": { "noBannedTypes": "warn", "useLiteralKeys": "off" },
+      "correctness": { "noUnusedImports": "error", "noUnusedVariables": "error" },
+      "suspicious": { "noExplicitAny": "warn", "noConsole": "off" },
+      "style": {
+        "useImportType": "error",
+        "useTemplate": "error",
+        "useConst": "error",
+        "noNonNullAssertion": "off"
+      }
+    }
+  }
+}
