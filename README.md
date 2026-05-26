@@ -38,7 +38,17 @@
 所有数据落到用户自选目录,**密钥与文档永不出域**,真正的"自有 AI"。
 
 ---
-
+<img src="screen/screen1.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen2.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen3.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen4.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen5.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen6.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen7.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen8.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen9.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen10.png" alt="Chayuan AI · 察元 AI"   />
+<img src="screen/screen11.png" alt="Chayuan AI · 察元 AI"   />
 ## 目录
 
 - [一、版权声明与开源许可(AGPL-3.0)](#一版权声明与开源许可)
